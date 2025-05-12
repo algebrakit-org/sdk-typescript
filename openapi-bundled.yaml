@@ -1,0 +1,1378 @@
+openapi: 3.0.3
+info:
+  title: Algebrakit Web Service API
+  version: 1.0.0
+  description: |
+    This API allows creating and managing exercise sessions, retrieve session information and scores, and lock or unlock sessions.
+servers:
+  - url: https://api.algebrakit.com
+    description: Production server (Ireland)
+  - url: https://prod.api.sg-1.algebrakit.com
+    description: Production server (Singapore)
+paths:
+  /session/create:
+    post:
+      summary: Create new exercise sessions
+      description: |
+        Create new sessions for Algebrakit exercises. Multiple sessions can be created in one call to optimize performance.
+      operationId: sessionCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+            examples:
+              minimal:
+                $ref: '#/components/examples/CreateSessionRequestExampleMinimal'
+              multiple:
+                $ref: '#/components/examples/CreateSessionRequestExampleMultiple'
+      responses:
+        '200':
+          description: Successful creation of sessions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSessionResponse'
+              examples:
+                example1:
+                  $ref: '#/components/examples/CreateSessionResponseExample'
+      security:
+        - ApiKeyAuth: []
+  /session/retrieve:
+    post:
+      summary: Retrieve existing sessions
+      description: |
+        Returns the same session information produced by /session/create for sessions that were created before. 
+        Used to efficiently display the web components for existing sessions in the webpage.
+      operationId: sessionRetrieve
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionRetrieveRequest'
+            examples:
+              example1:
+                $ref: '#/components/examples/SessionRetrieveRequestExample'
+      responses:
+        '200':
+          description: Successfully obtained session data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionRetrieveResponse'
+              examples:
+                example1:
+                  $ref: '#/components/examples/SessionRetrieveResponseExample'
+      security:
+        - ApiKeyAuth: []
+  /session/score:
+    post:
+      summary: Retrieve results from exercise sessions
+      description: |
+        Retrieve results from exercise sessions. This endpoint allows you to get the scores and other details of the sessions.
+      operationId: sessionScore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionScoreRequest'
+            examples:
+              example1:
+                $ref: '#/components/examples/SessionScoreRequestExample'
+      responses:
+        '200':
+          description: Successful creation of sessions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionScoreResponse'
+              examples:
+                example1:
+                  $ref: '#/components/examples/SessionScoreResponseExample'
+      security:
+        - ApiKeyAuth: []
+  /session/lock:
+    post:
+      summary: Lock or unlock exercise sessions.
+      description: |
+        Lock or unlock exercise sessions. Locked sessions do not allow modifications such as new evaluation events.
+      operationId: sessionLock
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionLockRequest'
+            examples:
+              example1:
+                $ref: '#/components/examples/SessionLockRequestExample'
+      responses:
+        '200':
+          description: Sessions successfully locked or unlocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionLockResponse'
+      security:
+        - ApiKeyAuth: []
+  /session/info:
+    post:
+      summary: Retrieve session information
+      description: |
+        Retrieve detailed information about a session, including exercise layout, solutions, and scoring results.
+      operationId: sessionInfo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionInfoRequest'
+            examples:
+              example1:
+                $ref: '#/components/examples/SessionInfoRequestExample'
+      responses:
+        '200':
+          description: Sessions successfully locked or unlocked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionInfoResponse'
+              examples:
+                example1:
+                  $ref: '#/components/examples/SessionInfoResponseExample'
+      security:
+        - ApiKeyAuth: []
+  /exercise/validate:
+    post:
+      summary: Checks whether an exercise is valid (i.e., that it runs) and obtains general information.
+      operationId: exerciseValidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseValidateRequest'
+            examples:
+              example1:
+                $ref: '#/components/examples/ExerciseValidateRequestExample'
+      responses:
+        '200':
+          description: Request was successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseValidateResponse'
+              examples:
+                example1:
+                  $ref: '#/components/examples/ExerciseValidateResponseExample'
+      security:
+        - ApiKeyAuth: []
+  /exercise/published-info:
+    post:
+      summary: Retrieve information about an exercise
+      description: |
+        Retrieve information about the structure, versions, and history of an exercise in Algebrakit's CMS.
+      operationId: exerciseInfo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseInfoRequest'
+      responses:
+        '200':
+          description: Information about the structure of the exercise.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseInfoResponse'
+              examples:
+                example1:
+                  $ref: '#/components/examples/ExerciseInfoResponseExample'
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+  schemas:
+    CreateSessionRequest:
+      type: object
+      required:
+        - exercises
+        - apiVersion
+      properties:
+        exercises:
+          type: array
+          description: |
+            List of exercises to create sessions for. There are three ways to specify exercises. You must specify exactly one of them:
+              - By exerciseId if the exercise was created wit the Algebrakit CMS
+              - By sessionId, to reuse the exercise from an existing session
+              - By exerciseSpec, which is a JSON object describing the exercise.
+          items:
+            oneOf:
+              - type: object
+                required:
+                  - exerciseId
+                properties:
+                  exerciseId:
+                    type: string
+                    description: Unique identifier for the exercise. Applies when the exercise was created with the Algebrakit CMS.
+                  version:
+                    type: string
+                    description: Version of the exercise or 'latest' (default) to refer to the most current version.
+              - type: object
+                required:
+                  - exerciseSpec
+                properties:
+                  exerciseSpec:
+                    type: object
+                    description: JSON specification of the exercise. You can create such a specification with the Algebrakit's Authoring Components, see https://docs.prod.algebrakit.com/api/authoring-component/
+              - type: object
+                required:
+                  - sessionId
+                properties:
+                  sessionId:
+                    type: string
+                    description: Identifier for an existing session. Use this to create a new session based on the same exercise.
+        scoringModel:
+          type: string
+          description: Optional reference to a predefined scoring model. See (here)(https://docs.prod.algebrakit.com/api/scoring/) for more information.
+        assessmentMode:
+          type: boolean
+          description: Assessment mode turns off the step-by-step evaluation, hints, and feedback for the student.
+        requireLockForSolution:
+          type: boolean
+          description: Prevents obtaining solutions before the session is locked.
+        apiVersion:
+          type: integer
+          description: API version to use for the request.
+          minimum: 2
+          maximum: 2
+    InteractionType:
+      type: string
+      enum:
+        - MULTISTEP
+        - MATH_TABLE
+        - FILL_IN_THE_BLANKS
+        - GEOMETRY
+        - STATISTICS
+        - NUMBER_LINE
+        - ARITHMETIC
+        - CHOICE
+      description: The question type of an interaction.
+    InteractionDescription:
+      type: object
+      description: Details of an interaction (question type) within a session.
+      properties:
+        type:
+          $ref: '#/components/schemas/InteractionType'
+        marks:
+          type: number
+          description: Marks assigned to the interaction.
+        scorable:
+          type: boolean
+          description: Indicates if the interaction is automatically scored.
+    SessionData:
+      type: object
+      required:
+        - success
+        - sessionId
+        - type
+        - html
+        - marksTotal
+        - interactions
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the session was created successfully.
+        msg:
+          type: string
+          description: Message providing additional information if creating the session failed.
+        sessionId:
+          type: string
+          description: Unique identifier for the created session.
+          example: 5658151f-a397-4abf-8256-8cd7aed472c1
+        type:
+          type: string
+          enum:
+            - SINGLE
+            - COMPOUND
+          description: A compound exercise includes multiple questions, like question a, b, etc.
+        solution:
+          type: boolean
+        html:
+          type: string
+          description: Optimized HTML code to include the session in a web page. This HTML code includes the initialization data required by the web component, which improves initialization time.
+        marksTotal:
+          type: number
+          example: 2
+          description: Total number of marks that can be earned in this exercise.
+        interactions:
+          type: object
+          description: Details of interactions (question type) within the exercise.
+          additionalProperties:
+            $ref: '#/components/schemas/InteractionDescription'
+    CreateSessionResponse:
+      type: array
+      description: Response containing session creation results.
+      items:
+        type: object
+        properties:
+          success:
+            type: boolean
+            description: Indicates if the request was successful. Note that a successful request does not guarantee that all sessions were created successfully.
+          msg:
+            type: string
+            description: Error message if the request failed.
+          sessions:
+            type: array
+            description: List of created sessions. This array aligns with the input array of exercises.
+            items:
+              $ref: '#/components/schemas/SessionData'
+    SessionRetrieveRequest:
+      type: object
+      required:
+        - sessionIds
+      properties:
+        sessionIds:
+          type: array
+          description: IDs of existing sessions.
+          items:
+            type: string
+    SessionRetrieveResponse:
+      type: array
+      description: List of sessions data objects. This array aligns with the input array of session IDs.
+      items:
+        $ref: '#/components/schemas/SessionData'
+    SessionScoreRequest:
+      type: object
+      required:
+        - sessionId
+      properties:
+        sessionId:
+          type: string
+          description: Unique identifier for the session to score.
+        lockSession:
+          type: boolean
+          description: Indicates if the session should be locked to prevent any future changes.
+          default: false
+    ScoringResult:
+      type: object
+      required:
+        - finished
+        - marksTotal
+        - marksEarned
+      properties:
+        finished:
+          type: boolean
+        marksTotal:
+          type: number
+        marksEarned:
+          type: number
+    ExerciseStatus:
+      type: string
+      enum:
+        - FINISHED
+        - CORRECT
+        - ERROR
+        - VIRGIN
+        - SUBMITTED
+        - GIVEUP
+        - UNKNOWN
+    InteractionScoring:
+      type: object
+      required:
+        - finished
+        - marksTotal
+        - marksEarned
+      properties:
+        finished:
+          type: boolean
+        marksTotal:
+          type: number
+        marksEarned:
+          type: number
+        penalties:
+          type: object
+          properties:
+            marksPenalty:
+              type: number
+            hintsRequested:
+              type: integer
+            mathErrors:
+              type: integer
+            notationErrors:
+              type: integer
+    FeedbackTag:
+      type: object
+      required:
+        - id
+        - weight
+        - source
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this skill.
+        errors:
+          type: array
+          items:
+            type: string
+            description: Unique identifier of a mistake or misconception.
+        weight:
+          type: integer
+          description: A value between -100 and 100 indicating the strength of this skill detection. A value of -100 means a strong indication the student does not master this skill.
+        source:
+          type: string
+          description: What caused this skill detection. Positive skill detections come from a correctly answered problem. Negative detections come from error detection. .
+          enum:
+            - ERROR_FEEDBACK
+            - FINISHED_STEP
+            - HINT
+    EventType:
+      type: string
+      enum:
+        - EVALUATE
+        - HINT
+        - GIVEUP
+        - SUBMIT
+    AnnotationType:
+      type: string
+      enum:
+        - INPUT_EXPRESSION
+        - ERROR_FEEDBACK
+        - SELECTED_OPTIONS
+        - INPUT_CONTENT
+    RichContent:
+      type: object
+      required:
+        - content
+        - mimeType
+      properties:
+        content:
+          type: string
+        mimeType:
+          type: string
+        akit:
+          type: string
+    Annotation:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/AnnotationType'
+        expr:
+          type: array
+          items:
+            $ref: '#/components/schemas/RichContent'
+        main:
+          type: array
+          items:
+            $ref: '#/components/schemas/RichContent'
+        sub:
+          type: array
+          items:
+            $ref: '#/components/schemas/RichContent'
+    InteractionEvent:
+      type: object
+      properties:
+        timestamp:
+          type: integer
+          description: Timestamp of the event in milliseconds since the epoch.
+        event:
+          $ref: '#/components/schemas/EventType'
+        exerciseStatus:
+          $ref: '#/components/schemas/ExerciseStatus'
+        progress:
+          type: number
+          description: Value between 0 and 1 indicating the progress of the interaction. A value of 1 corresponds to a fully correct answer. Note that progress is not a mark.
+        inputStatus:
+          $ref: '#/components/schemas/ExerciseStatus'
+        tags:
+          type: array
+          description: References to skill tags for this event, which indicate skills and optional misconceptions. Descriptions of these tags are provided in the tagDescriptions property of the session info.
+          items:
+            $ref: '#/components/schemas/FeedbackTag'
+        annotations:
+          type: array
+          description: Meaningful information about the event. What information is provided depends on the question type.
+          items:
+            $ref: '#/components/schemas/Annotation'
+    InteractionResult:
+      type: object
+      required:
+        - id
+        - type
+        - status
+        - progress
+        - tags
+        - events
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          description: Interaction type, e.g. MULTISTEP
+        status:
+          $ref: '#/components/schemas/ExerciseStatus'
+        progress:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Progress in range [0..1]. Note that progress is not the same as marks.
+        scoring:
+          $ref: '#/components/schemas/InteractionScoring'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeedbackTag'
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/InteractionEvent'
+    QuestionResult:
+      type: object
+      required:
+        - id
+        - interactions
+      properties:
+        id:
+          type: string
+        scoring:
+          $ref: '#/components/schemas/ScoringResult'
+        interactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/InteractionResult'
+    MultilanguageDescription:
+      type: object
+      description: A map from language code to a description.
+      additionalProperties:
+        type: string
+    TagDescriptions:
+      type: object
+      description: A map from a Skill Tag to the skill specification.
+      additionalProperties:
+        type: object
+        properties:
+          descr:
+            $ref: '#/components/schemas/MultilanguageDescription'
+          stepType:
+            type: string
+            enum:
+              - STRATEGY
+              - ALGEBRA
+              - CALCULATE
+              - ROUND
+              - CONCEPT
+          errors:
+            type: array
+            description: List of errors associated with this skill.
+            items:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Unique identifier for the error.
+                type:
+                  type: array
+                  items:
+                    type: string
+                    enum:
+                      - misconception
+                      - mistake
+                descr:
+                  $ref: '#/components/schemas/MultilanguageDescription'
+    SessionScoreResponse:
+      type: object
+      required:
+        - success
+        - questions
+        - scoring
+      properties:
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuestionResult'
+        tagDescriptions:
+          $ref: '#/components/schemas/TagDescriptions'
+        scoring:
+          $ref: '#/components/schemas/InteractionScoring'
+    SessionLockRequest:
+      type: object
+      required:
+        - action
+        - sessionIds
+      properties:
+        action:
+          type: string
+          enum:
+            - LOCK
+            - UNLOCK
+            - FINALIZE
+          description: Action to perform on the sessions. LOCK applies a reversible lock. FINALIZE applies a permanent lock.
+        sessionIds:
+          type: array
+          description: List of session IDs to lock or unlock.
+          items:
+            type: string
+    SessionLockResponse:
+      type: object
+      properties: {}
+    SessionInfoRequest:
+      type: object
+      required:
+        - sessionId
+      properties:
+        sessionId:
+          type: string
+          description: Unique identifier for the session to retrieve information for.
+    ElementItemInfoBase:
+      type: object
+      properties:
+        status:
+          type: string
+        score:
+          type: number
+    TextItemInfo:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ElementItemInfoBase'
+        - type: object
+          required:
+            - itemType
+            - content
+          properties:
+            itemType:
+              type: string
+              enum:
+                - TEXT
+            content:
+              type: string
+    DerivationPart:
+      oneOf:
+        - type: object
+          required:
+            - hint
+          properties:
+            hint:
+              type: string
+        - type: object
+          required:
+            - expression
+          properties:
+            expression:
+              type: string
+        - type: object
+          required:
+            - result
+          properties:
+            description:
+              type: string
+            derivation:
+              type: array
+              items:
+                $ref: '#/components/schemas/DerivationPart'
+            result:
+              type: string
+    InfoAnnotation:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: '#/components/schemas/AnnotationType'
+        expr:
+          type: string
+        main:
+          type: string
+        sub:
+          type: string
+    EventResultInfo:
+      type: object
+      properties:
+        timestamp:
+          type: integer
+          description: Timestamp of the event in milliseconds since the epoch.
+        event:
+          $ref: '#/components/schemas/EventType'
+        tags:
+          type: array
+          description: References to skill tags for this event, which indicate skills and optional misconceptions. Descriptions of these tags are provided in the tagDescriptions property of the session info.
+          items:
+            $ref: '#/components/schemas/FeedbackTag'
+        annotations:
+          type: array
+          description: Meaningful information about the event. What information is provided depends on the question type.
+          items:
+            $ref: '#/components/schemas/InfoAnnotation'
+    InteractionResultInfo:
+      type: object
+      required:
+        - id
+        - type
+        - status
+        - progress
+        - tags
+        - events
+      properties:
+        status:
+          $ref: '#/components/schemas/ExerciseStatus'
+        progress:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Progress in range [0..1]. Note that progress is not the same as marks.
+        scoring:
+          $ref: '#/components/schemas/InteractionScoring'
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeedbackTag'
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventResultInfo'
+    InteractionInfo:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ElementItemInfoBase'
+        - type: object
+          required:
+            - id
+            - itemType
+            - interactionType
+            - solution
+            - result
+          properties:
+            id:
+              type: string
+              description: Unique identifier ('ref-id') for this interaction.
+            itemType:
+              type: string
+              enum:
+                - INTERACTION
+            interactionType:
+              $ref: '#/components/schemas/InteractionType'
+            content:
+              type: string
+              nullable: true
+            solution:
+              type: string
+            derivation:
+              type: array
+              items:
+                $ref: '#/components/schemas/DerivationPart'
+              nullable: true
+            result:
+              $ref: '#/components/schemas/InteractionResultInfo'
+    ElementItemInfo:
+      type: object
+      required:
+        - itemType
+      discriminator:
+        propertyName: itemType
+      oneOf:
+        - $ref: '#/components/schemas/TextItemInfo'
+        - $ref: '#/components/schemas/InteractionInfo'
+    ElementInfo:
+      type: object
+      description: An Element is either a question block or a content block.
+      properties:
+        id:
+          type: string
+          description: Unique identifier ('ref-id') for this element block.
+        type:
+          type: string
+          enum:
+            - INSTRUCTION
+            - QUESTION
+          description: The type of the element. INSTRUCTION elements have no scorable interactions. QUESTION elements contain one or more scorable interactions.
+        items:
+          $ref: '#/components/schemas/ElementItemInfo'
+    SessionInfoResponse:
+      type: object
+      required:
+        - elements
+        - tagDescriptions
+      properties:
+        elements:
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementInfo'
+        tagDescriptions:
+          $ref: '#/components/schemas/TagDescriptions'
+    ExerciseValidateRequest:
+      oneOf:
+        - type: object
+          required:
+            - exerciseId
+          properties:
+            exerciseId:
+              type: string
+              description: Unique identifier for the session to score.
+            version:
+              oneOf:
+                - type: string
+                - type: number
+              description: The published version number of the exercise (number) or 'latest' (default). The latter refers to the current version of the exercise.
+        - type: object
+          required:
+            - exerciseSpec
+          properties:
+            exerciseSpec:
+              type: object
+              description: An exercise specification as obtained from the exercise authoring tool
+    ExerciseValidateResponse:
+      type: object
+      required:
+        - valid
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the request was successful.
+        valid:
+          type: boolean
+          description: If false, this exercise has a problem and is not suitable to create sessions.
+        msg:
+          type: string
+          description: A description of the problem in case the request failed or the exercise is not valid
+        marks:
+          type: number
+          description: The number of marks for the exercise.
+        random:
+          type: boolean
+          description: Indicates if the exercise is random.
+        interactions:
+          type: object
+          description: Details of interactions (question type) within the exercise.
+          additionalProperties:
+            $ref: '#/components/schemas/InteractionDescription'
+    ExerciseInfoRequest:
+      type: object
+      description: Request to retrieve information about an exercise.
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: The exercise ID.
+    ExerciseInfoCommitData:
+      type: object
+      description: Commit data for an exercise.
+      properties:
+        versionNumber:
+          type: string
+        commitDate:
+          type: string
+          format: date-time
+        commitMessage:
+          type: string
+        authorUsername:
+          type: string
+    ExerciseInfoInteraction:
+      type: object
+      description: Interaction info for an exercise version.
+      properties:
+        block:
+          description: Describes where the interaction is located.
+          type: string
+        refId:
+          description: The ID of the interaction in the exercise.
+          type: string
+        refName:
+          description: The name of the interaction in the exercise editor.
+          type: string
+        type:
+          $ref: '#/components/schemas/InteractionType'
+    ExerciseInfoResource:
+      type: object
+      description: Resource info for an exercise version.
+      properties:
+        refId:
+          description: The ID of the resource in the exercise.
+          type: string
+        type:
+          type: string
+        refName:
+          description: The name of the resource in the exercise editor.
+          type: string
+    ExerciseInfoPublishedVersion:
+      type: object
+      description: Published version info for an exercise.
+      properties:
+        name:
+          type: string
+        majorVersion:
+          oneOf:
+            - type: integer
+            - type: string
+              enum:
+                - latest
+        minorVersion:
+          type: integer
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+        numberOfLevels:
+          type: integer
+        interactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExerciseInfoInteraction'
+        resources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExerciseInfoResource'
+    ExerciseInfoResponse:
+      type: object
+      description: Information about the structure of the exercise.
+      properties:
+        commitHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExerciseInfoCommitData'
+        id:
+          type: string
+        publishedVersions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExerciseInfoPublishedVersion'
+        courseName:
+          type: string
+        type:
+          type: string
+          description: regular exercise, single reference, or arrangement exercise
+  examples:
+    CreateSessionRequestExampleMinimal:
+      value:
+        exercises:
+          - exerciseId: fa42e943-8213-41a6-8a91-8c22a929ffe9
+            version: latest
+        apiVersion: 2
+    CreateSessionRequestExampleMultiple:
+      value:
+        exercises:
+          - exerciseId: fa42e943-8213-41a6-8a91-8c22a929ffe9
+            version: latest
+          - exerciseId: 0ce4c011-28e3-4423-9429-75ae28e3bc10
+            version: latest
+        assessmentMode: true
+        scoringModel: default
+        apiVersion: 2
+    CreateSessionResponseExample:
+      value:
+        - success: true
+          sessions:
+            - success: true
+              sessionId: 691ddb39-e830-41ae-8f97-8c94dcb6120b
+              type: SINGLE
+              solution: false
+              marksTotal: 1
+              interactions:
+                lNzHy:
+                  type: MULTISTEP
+                  marks: 1
+                  scorable: true
+              html: <akit-exercise session-id="691ddb39-e830-41ae-8f97-8c94dcb6120b"><script type="algebrakit/init-data">{...}</script></akit-exercise>
+        - success: true
+          sessions:
+            - success: true
+              sessionId: 62ea6f14-bfcc-42a7-8682-7aff31339e24
+              type: SINGLE
+              solution: false
+              marksTotal: 1
+              interactions:
+                mFzbB:
+                  type: GEOMETRY
+                  marks: 1
+                  scorable: true
+              html: <akit-exercise session-id="62ea6f14-bfcc-42a7-8682-7aff31339e24"><script type="algebrakit/init-data">{...}</script></akit-exercise>
+    SessionRetrieveRequestExample:
+      value:
+        sessionIds:
+          - 0a405901-8b89-4665-9ea0-6dbdff3602fc
+    SessionRetrieveResponseExample:
+      value:
+        - success: true
+          sessionId: 0a405901-8b89-4665-9ea0-6dbdff3602fc
+          type: SINGLE
+          solution: false
+          marksTotal: 1
+          interactions:
+            lNzHy:
+              type: MULTISTEP
+              marks: 1
+              scorable: true
+          html: <akit-exercise session-id="0a405901-8b89-4665-9ea0-6dbdff3602fc" akit-init="inline" ><script type="algebrakit/init-data">{...}</script></akit-exercise>
+    SessionScoreRequestExample:
+      value:
+        sessionId: 0a405901-8b89-4665-9ea0-6dbdff3602fc
+        lockSession: true
+    SessionScoreResponseExample:
+      value:
+        questions:
+          - id: Q1
+            interactions:
+              - id: lNzHy
+                type: MULTISTEP
+                events:
+                  - timestamp: 1746337790414
+                    event: HINT
+                    tags:
+                      - id: ExpandSingleBrackets
+                        weight: 100
+                        source: HINT
+                    annotations:
+                      - type: HINT
+                        main:
+                          - mimeType: text/plain
+                            content: Expand the brackets
+                        sub:
+                          - mimeType: text/plain
+                            content: 'Multiply each term inside the parentheses by '
+                          - mimeType: application/x-tex
+                            content: $6$
+                            akit: '6'
+                        expr:
+                          - mimeType: application/x-tex
+                            content: $$\begingroup\color{#336699}\begingroup 6 \left(p - 1\right)\endgroup\endgroup=4 p + 10$$
+                            akit: DerivationContext[Solve[Highlight[6(p+-1)]=4 p+10, p, True],Exact=>True]
+                  - timestamp: 1746337794212
+                    event: EVALUATE
+                    exerciseStatus: ERROR
+                    progress: 0
+                    tags:
+                      - id: ExpandSingleBrackets
+                        errors:
+                          - SkippingTerms
+                        weight: -100
+                        source: ERROR_FEEDBACK
+                    inputStatus: ERROR
+                    annotations:
+                      - type: INPUT_EXPRESSION
+                        expr:
+                          - content: 6p-1=4p+10
+                            mimeType: application/x-tex
+                      - type: ERROR_FEEDBACK
+                        expr:
+                          - mimeType: application/x-tex
+                            content: $$6 p - \begingroup\color{darkred}\begingroup 1\endgroup\endgroup=4 p + 10$$
+                            akit: DerivationContext[Solve[6 p+Highlight[-1]=4 p+10, p, True],Exact=>True]
+                        main:
+                          - mimeType: text/plain
+                            content: You did not compute the multiplication correctly.
+                        sub:
+                          - mimeType: text/plain
+                            content: 'You did not multiply all terms of '
+                          - mimeType: application/x-tex
+                            content: $p - 1$
+                            akit: p+-1
+                          - mimeType: text/plain
+                            content: ' by '
+                          - mimeType: application/x-tex
+                            content: $6$
+                            akit: '6'
+                          - mimeType: text/plain
+                            content: .
+                  - timestamp: 1746337800209
+                    event: EVALUATE
+                    exerciseStatus: CORRECT
+                    progress: 0
+                    tags: []
+                    inputStatus: CORRECT
+                    annotations:
+                      - type: INPUT_EXPRESSION
+                        expr:
+                          - content: 2p=16
+                            mimeType: application/x-tex
+                  - timestamp: 1746337804792
+                    event: EVALUATE
+                    exerciseStatus: FINISHED
+                    progress: 1
+                    tags:
+                      - id: ExpandSingleBrackets
+                        weight: 100
+                        source: FINISHED_STEP
+                      - id: EquationsBalanceMethodArrangeTerms
+                        weight: 100
+                        source: FINISHED_STEP
+                      - id: EquationsOperationsAdd
+                        weight: 100
+                        source: FINISHED_STEP
+                      - id: AlgebraAddingLikeTerms
+                        weight: 100
+                        source: FINISHED_STEP
+                      - id: EquationsBalanceMethodArrangeTerms
+                        weight: 100
+                        source: FINISHED_STEP
+                      - id: EquationsOperationsAdd
+                        weight: 100
+                        source: FINISHED_STEP
+                      - id: EquationsBalanceMethodDivideCoefficient
+                        weight: 100
+                        source: FINISHED_STEP
+                      - id: EquationsOperationsMultiply
+                        weight: 100
+                        source: FINISHED_STEP
+                    inputStatus: FINISHED
+                    annotations:
+                      - type: INPUT_EXPRESSION
+                        expr:
+                          - content: p=\frac{16}{2}=8
+                            mimeType: application/x-tex
+                progress: 1
+                tags:
+                  - id: ExpandSingleBrackets
+                    weight: 100
+                    source: HINT
+                status: FINISHED
+                scoring:
+                  marksEarned: 1
+                  marksTotal: 1
+                  penalties:
+                    marksPenalty: 0
+                    hintsRequested: 1
+                    mathErrors: 1
+                    notationErrors: 0
+            scoring:
+              finished: true
+              marksTotal: 1
+              marksEarned: 1
+        tagDescriptions:
+          ExpandSingleBrackets:
+            descr:
+              en: Expanding a single pair of parentheses
+            stepType: ALGEBRA
+            errors:
+              - id: SkippingTerms
+                type:
+                  - MISCONCEPTION
+                descr:
+                  en: Not multiplying all terms by the factored constant.
+        scoring:
+          finished: true
+          marksEarned: 1
+          marksTotal: 1
+    SessionLockRequestExample:
+      value:
+        action: LOCK
+        sessionIds:
+          - f2f62104-3b5a-4156-aeaf-291167e5f9e3
+    SessionInfoRequestExample:
+      value:
+        sessionId: 0a405901-8b89-4665-9ea0-6dbdff3602fc
+    SessionInfoResponseExample:
+      value:
+        success: true
+        elements:
+          - id: Q1
+            type: QUESTION
+            items:
+              - itemType: TEXT
+                content: $$6\left ( p - 1\right ) = 4p + 10$$
+              - id: lNzHy
+                itemType: INTERACTION
+                interactionType: MULTISTEP
+                solution: $$p =8$$
+                derivation:
+                  - expression: $$6 \left(p - 1\right)=4 p + 10$$
+                  - result: $$6 p - 6=4 p + 10$$
+                    description: Expand the brackets
+                  - result: $$6 p - 4 p - 6=10$$
+                    description: 'Balance method: subtract  $4 p $  from both sides'
+                  - result: $$2 p - 6=10$$
+                    description: Combine the similar terms
+                  - result: $$2 p =16$$
+                    description: 'Balance method: add  $6$  to both sides.'
+                  - result: $$p =8$$
+                    description: Divide both sides by  $2$
+                result:
+                  status: FINISHED
+                  progress: 1
+                  tags:
+                    - id: ExpandSingleBrackets
+                      weight: 100
+                      source: HINT
+                    - id: ExpandSingleBrackets
+                      errors:
+                        - SkippingTerms
+                      weight: -100
+                      source: ERROR_FEEDBACK
+                    - id: ExpandSingleBrackets
+                      weight: 100
+                      source: FINISHED_STEP
+                    - id: EquationsBalanceMethodArrangeTerms
+                      weight: 100
+                      source: FINISHED_STEP
+                    - id: EquationsOperationsAdd
+                      weight: 100
+                      source: FINISHED_STEP
+                    - id: AlgebraAddingLikeTerms
+                      weight: 100
+                      source: FINISHED_STEP
+                    - id: EquationsBalanceMethodArrangeTerms
+                      weight: 100
+                      source: FINISHED_STEP
+                    - id: EquationsOperationsAdd
+                      weight: 100
+                      source: FINISHED_STEP
+                    - id: EquationsBalanceMethodDivideCoefficient
+                      weight: 100
+                      source: FINISHED_STEP
+                    - id: EquationsOperationsMultiply
+                      weight: 100
+                      source: FINISHED_STEP
+                  events:
+                    - timestamp: 1746337790414
+                      event: HINT
+                      tags:
+                        - id: ExpandSingleBrackets
+                          weight: 100
+                          source: HINT
+                      annotations:
+                        - type: HINT
+                          main: Expand the brackets
+                          sub: Multiply each term inside the parentheses by  $6$
+                          expr: $$\begingroup\color{#336699}\begingroup 6 \left(p - 1\right)\endgroup\endgroup=4 p + 10$$
+                    - timestamp: 1746337794212
+                      event: EVALUATE
+                      exerciseStatus: ERROR
+                      progress: 0
+                      tags:
+                        - id: ExpandSingleBrackets
+                          errors:
+                            - SkippingTerms
+                          weight: -100
+                          source: ERROR_FEEDBACK
+                      inputStatus: ERROR
+                      annotations:
+                        - type: INPUT_EXPRESSION
+                          expr: $6p-1=4p+10$
+                        - type: ERROR_FEEDBACK
+                          main: You did not compute the multiplication correctly.
+                          sub: You did not multiply all terms of  $p - 1$  by  $6$ .
+                          expr: $$6 p - \begingroup\color{darkred}\begingroup 1\endgroup\endgroup=4 p + 10$$
+                    - timestamp: 1746337798237
+                      event: EVALUATE
+                      exerciseStatus: CORRECT
+                      progress: 0
+                      tags: []
+                      inputStatus: CORRECT
+                      annotations:
+                        - type: INPUT_EXPRESSION
+                          expr: $6p-6=4p+10$
+                    - timestamp: 1746337800209
+                      event: EVALUATE
+                      exerciseStatus: CORRECT
+                      progress: 0
+                      tags: []
+                      inputStatus: CORRECT
+                      annotations:
+                        - type: INPUT_EXPRESSION
+                          expr: $2p=16$
+                    - timestamp: 1746337804792
+                      event: EVALUATE
+                      exerciseStatus: FINISHED
+                      progress: 1
+                      tags:
+                        - id: ExpandSingleBrackets
+                          weight: 100
+                          source: FINISHED_STEP
+                        - id: EquationsBalanceMethodArrangeTerms
+                          weight: 100
+                          source: FINISHED_STEP
+                        - id: EquationsOperationsAdd
+                          weight: 100
+                          source: FINISHED_STEP
+                        - id: AlgebraAddingLikeTerms
+                          weight: 100
+                          source: FINISHED_STEP
+                        - id: EquationsBalanceMethodArrangeTerms
+                          weight: 100
+                          source: FINISHED_STEP
+                        - id: EquationsOperationsAdd
+                          weight: 100
+                          source: FINISHED_STEP
+                        - id: EquationsBalanceMethodDivideCoefficient
+                          weight: 100
+                          source: FINISHED_STEP
+                        - id: EquationsOperationsMultiply
+                          weight: 100
+                          source: FINISHED_STEP
+                      inputStatus: FINISHED
+                      annotations:
+                        - type: INPUT_EXPRESSION
+                          expr: $p=\frac{16}{2}=8$
+        tagDescriptions:
+          ExpandSingleBrackets:
+            descr:
+              en: Expanding a single pair of parentheses
+            stepType: ALGEBRA
+            errors:
+              - id: SkippingTerms
+                type:
+                  - MISCONCEPTION
+                descr:
+                  en: Not multiplying all terms by the factored constant.
+          EquationsBalanceMethodArrangeTerms:
+            descr:
+              en: Arrange terms with variable to the left and other terms to the right.
+            stepType: STRATEGY
+          EquationsOperationsAdd:
+            descr:
+              en: Add or subtract terms using the balance method
+            stepType: STRATEGY
+          AlgebraAddingLikeTerms:
+            descr:
+              en: Adding like terms
+            stepType: ALGEBRA
+          EquationsBalanceMethodDivideCoefficient:
+            descr:
+              en: Divide by the coefficient of the variable to get the solution.
+            stepType: STRATEGY
+          EquationsOperationsMultiply:
+            descr:
+              en: Multiply or divide an equation using the balance method
+            stepType: STRATEGY
+    ExerciseValidateRequestExample:
+      value:
+        exerciseId: e6cef2b5-b114-4931-ac68-b77289d7c0a3
+    ExerciseValidateResponseExample:
+      value:
+        success: true
+        valid: true
+        marks: 1
+        random: true
+        interactions:
+          Wp0Hr:
+            type: MULTISTEP
+            marks: 1
+    ExerciseInfoResponseExample:
+      value:
+        commitHistory:
+          - versionNumber: 1.0.0
+            commitDate: '2024-01-01T12:00:00Z'
+            commitMessage: Initial version.
+            authorUsername: author1
+        id: exercise-123
+        publishedVersions:
+          - name: Algebra Basics
+            majorVersion: latest
+            metadata:
+              topic: Algebra
+            numberOfLevels: 0
+            interactions:
+              - block: Question a
+                refId: Wp0Hr
+                type: MULTISTEP
+                refName: I1
+        courseName: Algebra 101
+        type: regular exercise
