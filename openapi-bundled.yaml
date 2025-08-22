@@ -142,10 +142,10 @@ paths:
       summary: Retrieve session info (beta)
       description: |
         Retrieve detailed information about a session, including exercise layout, solutions, and scoring results.
-        This endpoint provides human-readable (or AI-readable) information about the session, with enhanced annotation data 
-        that includes complete question views with student inputs.
+        This information provides more information than `/session/score`. However, calculating the solutions can be time-consuming so you should use 
+        `/session/score` when possible.
 
-        This endpoint will ultimately replace the `/session/score` endpoint.
+        This endpoint is in beta and may change in the future. It is recommended to use the `/session/score` endpoint for production use.
       operationId: sessionInfo
       requestBody:
         required: true
@@ -415,6 +415,15 @@ components:
           type: number
         marksEarned:
           type: number
+        penalties:
+          type: object
+          properties:
+            marksPenalty:
+              type: number
+            hintsRequested:
+              type: integer
+            mathErrors:
+              type: integer
     ExerciseStatus:
       type: string
       enum:
@@ -488,18 +497,10 @@ components:
     AnnotationType:
       type: string
       enum:
-        - HINT
-        - ERROR_FEEDBACK
         - INPUT_EXPRESSION
+        - ERROR_FEEDBACK
         - SELECTED_OPTIONS
-        - INPUT
-      description: |
-        Type of annotation in the session info response:
-        - HINT: Hint provided to help the student
-        - ERROR_FEEDBACK: Feedback about an error in the student's input
-        - INPUT: Complete view of the question with student inputs at the time of the event (used in /session/info only)
-        - INPUT_EXPRESSION: Expression entered by the student (used in /session/score only)
-        - SELECTED_OPTIONS: Options selected by the student (used in /session/score only)
+        - INPUT_CONTENT
     RichContent:
       type: object
       required:
@@ -762,29 +763,15 @@ components:
       properties:
         type:
           $ref: '#/components/schemas/AnnotationType'
-        expression:
+        expr:
           type: string
-          description: |
-            Mathematical expression in LaTeX format. 
-            For inline math inputs, uses \boxed{\color{blue} ...} to highlight input fields.
-            Replaces the former 'expr' field.
-        content:
+          description: Optional mathematical expression in latex syntax associated with the annotation
+        main:
           type: string
-          description: |
-            Annotation content in HTML format. This field combines the former 'main', 'sub', and 'text' fields.
-            For INPUT type annotations, contains the complete question view with student inputs encoded as:
-            - <math-field> tags for mathematical input fields
-            - <choice-field label="X"> tags for multiple choice options
-            - \boxed{\color{blue} ...} for inline math expression inputs
-        gapIndex:
-          type: integer
-          description: Index of the gap in a Fill in the Blanks question, starting from 1
-        row:
-          type: integer
-          description: Row index in a Math Table question, starting from 1
-        col:
-          type: integer
-          description: Column index in a Math Table question, starting from 1
+          description: Optional primary description line
+        sub:
+          type: string
+          description: Optional secondary description line
     EventResultInfo:
       type: object
       required:
@@ -1256,10 +1243,18 @@ components:
               finished: false
               marksTotal: 1
               marksEarned: 0
+              penalties:
+                marksPenalty: 0
+                hintsRequested: 2
+                mathErrors: 1
         scoring:
           finished: false
           marksEarned: 0
           marksTotal: 1
+          penalties:
+            marksPenalty: 0
+            hintsRequested: 2
+            mathErrors: 1
     SessionLockRequestExample:
       value:
         action: LOCK
@@ -1301,14 +1296,87 @@ components:
                             - SkippingTerms
                           source: ERROR_FEEDBACK
                       annotations:
-                        - type: INPUT
-                          content: $6p-1=4p+10$
+                        - type: INPUT_EXPRESSION
+                          expr: $6p-1=4p+10$
                         - type: ERROR_FEEDBACK
-                          content: <h1>You did not expand the parentheses correctly.</h1>You did not multiply all terms of  $p - 1$  by  $6$ .
-                          expression: $6 p - \begingroup\color{darkred}\begingroup 1\endgroup\endgroup=4 p + 10$
+                          main: You did not compute the multiplication correctly.
+                          sub: You did not multiply all terms of  $p - 1$  by  $6$ .
+                          expr: $$6 p - \begingroup\color{darkred}\begingroup 1\endgroup\endgroup=4 p + 10$$
                       exerciseStatus: ERROR
                       progress: 0
                       inputStatus: ERROR
+                    - timestamp: 1752395846387
+                      event: EVALUATE
+                      tags:
+                        - id: EquationsBalanceMethodArrangeTerms
+                          source: NEXT_STEP
+                        - id: EquationsOperationsAdd
+                          source: NEXT_STEP
+                      annotations:
+                        - type: INPUT_EXPRESSION
+                          expr: $6p-6=4p+10$
+                      exerciseStatus: CORRECT
+                      progress: 0
+                      inputStatus: CORRECT
+                      skillsTodo:
+                        - EquationsBalanceMethodArrangeTerms
+                        - EquationsOperationsAdd
+                        - AlgebraAddingLikeTerms
+                        - EquationsBalanceMethodDivideCoefficient
+                        - EquationsOperationsMultiply
+                    - timestamp: 1752395850393
+                      event: HINT
+                      tags:
+                        - id: EquationsBalanceMethodArrangeTerms
+                          source: HINT
+                        - id: EquationsOperationsAdd
+                          source: HINT
+                      annotations:
+                        - type: HINT
+                          main: 'Balance method: subtract  $4 p $  from both sides'
+                          expr: $$\begingroup\color{#336699}\begingroup 6 p \endgroup\endgroup- 6=\begingroup\color{#336699}\begingroup 4 p \endgroup\endgroup+ 10$$
+                    - timestamp: 1752395852101
+                      event: EVALUATE
+                      tags:
+                        - id: EquationsBalanceMethodDivideCoefficient
+                          source: NEXT_STEP
+                        - id: EquationsOperationsMultiply
+                          source: NEXT_STEP
+                      annotations:
+                        - type: INPUT_EXPRESSION
+                          expr: $2p=16$
+                      exerciseStatus: CORRECT
+                      progress: 0
+                      inputStatus: CORRECT
+                      skillsTodo:
+                        - EquationsBalanceMethodDivideCoefficient
+                        - EquationsOperationsMultiply
+                    - timestamp: 1752395854898
+                      event: EVALUATE
+                      tags: []
+                      annotations:
+                        - type: INPUT_EXPRESSION
+                          expr: $p=\frac{16}{2}$
+                      exerciseStatus: CORRECT
+                      progress: 0.5
+                      inputStatus: CORRECT
+                    - timestamp: 1752395865482
+                      event: HINT
+                      tags: []
+                      annotations:
+                        - type: HINT
+                          main: 'Calculate:  $\frac{16}{2}$'
+                          expr: $$p =\begingroup\color{#336699}\begingroup \frac{16}{2}\endgroup\endgroup$$
+                  tags:
+                    - id: ExpandSingleBrackets
+                      weight: 100
+                      errors:
+                        - SkippingTerms
+                      source: ERROR_FEEDBACK
+                    - id: EquationsBalanceMethodArrangeTerms
+                      source: HINT
+                    - id: EquationsOperationsAdd
+                      source: HINT
                   scoring:
                     marksEarned: 0
                     marksTotal: 1
