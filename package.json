@@ -4,7 +4,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc"
+    "build": "tsc",
+    "demo": "ts-node demo/demo.ts",
+    "demo:setup": "cd demo && cp .env.example .env && echo 'Please edit demo/.env with your API key'"
   },
   "keywords": [],
   "author": "",
@@ -14,5 +16,9 @@
     "@types/node": "^22.15.17",
     "axios": "^1.9.0",
     "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "dotenv": "^17.2.1",
+    "ts-node": "^10.9.2"
   }
 }
