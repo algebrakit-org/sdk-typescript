@@ -1,7 +1,10 @@
 openapi: 3.0.3
 info:
   title: Algebrakit Web Service API
-  version: 1.0.0
+  version: 2.0.0
+  x-logo:
+    url: https://public.algebrakit.nl/logo_white.png
+    altText: Algebrakit Logo
   description: |
     This API allows creating and managing exercise sessions, retrieve session information and scores, and lock or unlock sessions.
 servers:
@@ -12,26 +15,26 @@ servers:
 paths:
   /session/create:
     post:
-      summary: Create new exercise sessions
+      summary: Create sessions
       description: |
         Create new sessions for Algebrakit exercises. Multiple sessions can be created in one call to optimize performance.
+        The response contains a unique session ID for each session. It also offers optimized HTML code which you can insert into your web page. 
+        This HTML code includes allows for faster initialization as the web component does not need to retrieve data from the web service.
       operationId: sessionCreate
       requestBody:
         required: true
         content:
-          application/json:
+          application/json; charset=utf-8:
             schema:
               $ref: '#/components/schemas/CreateSessionRequest'
             examples:
-              minimal:
-                $ref: '#/components/examples/CreateSessionRequestExampleMinimal'
-              multiple:
+              example1:
                 $ref: '#/components/examples/CreateSessionRequestExampleMultiple'
       responses:
         '200':
           description: Successful creation of sessions
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 $ref: '#/components/schemas/CreateSessionResponse'
               examples:
@@ -41,15 +44,25 @@ paths:
         - ApiKeyAuth: []
   /session/retrieve:
     post:
-      summary: Retrieve existing sessions
+      summary: Retrieve sessions
       description: |
-        Returns the same session information produced by /session/create for sessions that were created before. 
-        Used to efficiently display the web components for existing sessions in the webpage.
+        Returns the same session information produced by /session/create, but for for existing sessions. 
+        Used to efficiently render the web components for existing sessions.
+
+        Note that restoring an existing exercise can be done without using this endpoint, simply by the `akit-exercise` or `akit-interaction` web components:
+        ```
+        <akit-exercise session-id="..."></akit-exercise>
+        ```
+        The web component will automatically retrieve all needed information (question type, learning events, etc) from the server. 
+
+        However, this roundtrip impacts page load time, 
+        especially if multiple exercises are on the page. The `/session/retrieve` endpoint lets you obtain optimized HTML code for multiple sessions in one call. 
+        Inserting this optimized HTML into the webpage prevents a server roundtrip per exercise and allows the exercises to show instantly.
       operationId: sessionRetrieve
       requestBody:
         required: true
         content:
-          application/json:
+          application/json; charset=utf-8:
             schema:
               $ref: '#/components/schemas/SessionRetrieveRequest'
             examples:
@@ -59,7 +72,7 @@ paths:
         '200':
           description: Successfully obtained session data
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 $ref: '#/components/schemas/SessionRetrieveResponse'
               examples:
@@ -69,14 +82,15 @@ paths:
         - ApiKeyAuth: []
   /session/score:
     post:
-      summary: Retrieve results from exercise sessions
+      summary: Get session scores
       description: |
-        Retrieve results from exercise sessions. This endpoint allows you to get the scores and other details of the sessions.
+        Retrieve results from an exercise session. This endpoint allows you to get the scores and other details of the session.
+        You can optionally lock the session to prevent any further modifications.
       operationId: sessionScore
       requestBody:
         required: true
         content:
-          application/json:
+          application/json; charset=utf-8:
             schema:
               $ref: '#/components/schemas/SessionScoreRequest'
             examples:
@@ -84,9 +98,9 @@ paths:
                 $ref: '#/components/examples/SessionScoreRequestExample'
       responses:
         '200':
-          description: Successful creation of sessions
+          description: Request succeeded
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 $ref: '#/components/schemas/SessionScoreResponse'
               examples:
@@ -94,16 +108,21 @@ paths:
                   $ref: '#/components/examples/SessionScoreResponseExample'
       security:
         - ApiKeyAuth: []
-  /session/lock:
+  /sessions/lock:
     post:
-      summary: Lock or unlock exercise sessions.
+      summary: (Un)lock sessions.
       description: |
         Lock or unlock exercise sessions. Locked sessions do not allow modifications such as new evaluation events.
+        This functionality is mainly intended for assessments to guarantee nobody changes the results afterward.
+
+        There are two types of lock actions. You can later undo a `LOCK` action with an `UNLOCK` action. A `FINALIZE` action locks a session forever.
+
+        You can lock or unlock a batch of sessions in a single request.
       operationId: sessionLock
       requestBody:
         required: true
         content:
-          application/json:
+          application/json; charset=utf-8:
             schema:
               $ref: '#/components/schemas/SessionLockRequest'
             examples:
@@ -113,21 +132,25 @@ paths:
         '200':
           description: Sessions successfully locked or unlocked
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 $ref: '#/components/schemas/SessionLockResponse'
       security:
         - ApiKeyAuth: []
   /session/info:
     post:
-      summary: Retrieve session information
+      summary: Retrieve session info (beta)
       description: |
         Retrieve detailed information about a session, including exercise layout, solutions, and scoring results.
+        This endpoint provides human-readable (or AI-readable) information about the session, with enhanced annotation data 
+        that includes complete question views with student inputs.
+
+        This endpoint will ultimately replace the `/session/score` endpoint.
       operationId: sessionInfo
       requestBody:
         required: true
         content:
-          application/json:
+          application/json; charset=utf-8:
             schema:
               $ref: '#/components/schemas/SessionInfoRequest'
             examples:
@@ -135,9 +158,9 @@ paths:
                 $ref: '#/components/examples/SessionInfoRequestExample'
       responses:
         '200':
-          description: Sessions successfully locked or unlocked
+          description: Request succeeded
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 $ref: '#/components/schemas/SessionInfoResponse'
               examples:
@@ -147,12 +170,13 @@ paths:
         - ApiKeyAuth: []
   /exercise/validate:
     post:
-      summary: Checks whether an exercise is valid (i.e., that it runs) and obtains general information.
+      summary: Validate exercise
+      description: Checks whether an exercise is valid (i.e., that it runs) and obtains general information.
       operationId: exerciseValidate
       requestBody:
         required: true
         content:
-          application/json:
+          application/json; charset=utf-8:
             schema:
               $ref: '#/components/schemas/ExerciseValidateRequest'
             examples:
@@ -162,7 +186,7 @@ paths:
         '200':
           description: Request was successful
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 $ref: '#/components/schemas/ExerciseValidateResponse'
               examples:
@@ -172,21 +196,24 @@ paths:
         - ApiKeyAuth: []
   /exercise/published-info:
     post:
-      summary: Retrieve information about an exercise
+      summary: Retrieve exercise info
       description: |
         Retrieve information about the structure, versions, and history of an exercise in Algebrakit's CMS.
       operationId: exerciseInfo
       requestBody:
         required: true
         content:
-          application/json:
+          application/json; charset=utf-8:
             schema:
               $ref: '#/components/schemas/ExerciseInfoRequest'
+            examples:
+              example1:
+                $ref: '#/components/examples/ExerciseInfoRequestExample'
       responses:
         '200':
           description: Information about the structure of the exercise.
           content:
-            application/json:
+            application/json; charset=utf-8:
               schema:
                 $ref: '#/components/schemas/ExerciseInfoResponse'
               examples:
@@ -210,7 +237,7 @@ components:
           description: |
             List of exercises to create sessions for. There are three ways to specify exercises. You must specify exactly one of them:
               - By exerciseId if the exercise was created wit the Algebrakit CMS
-              - By sessionId, to reuse the exercise from an existing session
+              - By sessionId, to reuse the exercise from an existing session. This allows you to create identical sessions from a random exercise.
               - By exerciseSpec, which is a JSON object describing the exercise.
           items:
             oneOf:
@@ -237,7 +264,10 @@ components:
                 properties:
                   sessionId:
                     type: string
-                    description: Identifier for an existing session. Use this to create a new session based on the same exercise.
+                    description: Identifier for an existing session. Use this to create multiple identical sessions from a random exercise.
+                  nr:
+                    type: integer
+                    description: Number of sessions to create. If not specified, the number of exercises in the session will be used.
         scoringModel:
           type: string
           description: Optional reference to a predefined scoring model. See (here)(https://docs.prod.algebrakit.com/api/scoring/) for more information.
@@ -249,7 +279,7 @@ components:
           description: Prevents obtaining solutions before the session is locked.
         apiVersion:
           type: integer
-          description: API version to use for the request.
+          description: API version to use for the request. Always set to 2.
           minimum: 2
           maximum: 2
     InteractionType:
@@ -360,6 +390,18 @@ components:
           type: boolean
           description: Indicates if the session should be locked to prevent any future changes.
           default: false
+        withEvents:
+          type: boolean
+          description: Include detailed informatin per event (evaluation, hint, etc) in the response. Default is true.
+        withEventAnnotations:
+          type: boolean
+          description: Include detailed event annotations in the event results. Applies if `withEvents` is enabled. Default is true.
+        withTags:
+          type: boolean
+          description: Include skill tags information in the response. Default is true.
+        withTagDescriptions:
+          type: boolean
+          description: Include tag descriptions in the response. Default is true.
     ScoringResult:
       type: object
       required:
@@ -405,33 +447,37 @@ components:
               type: integer
             mathErrors:
               type: integer
-            notationErrors:
-              type: integer
-    FeedbackTag:
+    SkillTag:
       type: object
       required:
         - id
-        - weight
         - source
       properties:
         id:
           type: string
           description: Unique identifier for this skill.
+        source:
+          type: string
+          description: |
+            What caused this skill detection.
+            - ERROR_FEEDBACK: The skill relates to error feedback
+            - HINT: The skill relatess to a hint
+            - FINISHED_STEP: The skill is part of a derivation the student has completed
+            - NEXT_STEP: This skill relates to the next step to take in a derivation that was uncompleted.
+          enum:
+            - ERROR_FEEDBACK
+            - HINT
+            - FINISHED_STEP
+            - NEXT_STEP
+        weight:
+          type: integer
+          description: Applies when source is `ERROR_FEEDBACK`. A value between 0 and 100 indicating the relevance of this skill detection.
         errors:
           type: array
+          description: Applies when source is `ERROR_FEEDBACK`. References to the misconceptions or mistakes that the error relates to.
           items:
             type: string
             description: Unique identifier of a mistake or misconception.
-        weight:
-          type: integer
-          description: A value between -100 and 100 indicating the strength of this skill detection. A value of -100 means a strong indication the student does not master this skill.
-        source:
-          type: string
-          description: What caused this skill detection. Positive skill detections come from a correctly answered problem. Negative detections come from error detection. .
-          enum:
-            - ERROR_FEEDBACK
-            - FINISHED_STEP
-            - HINT
     EventType:
       type: string
       enum:
@@ -442,10 +488,18 @@ components:
     AnnotationType:
       type: string
       enum:
-        - INPUT_EXPRESSION
+        - HINT
         - ERROR_FEEDBACK
+        - INPUT_EXPRESSION
         - SELECTED_OPTIONS
-        - INPUT_CONTENT
+        - INPUT
+      description: |
+        Type of annotation in the session info response:
+        - HINT: Hint provided to help the student
+        - ERROR_FEEDBACK: Feedback about an error in the student's input
+        - INPUT: Complete view of the question with student inputs at the time of the event (used in /session/info only)
+        - INPUT_EXPRESSION: Expression entered by the student (used in /session/score only)
+        - SELECTED_OPTIONS: Options selected by the student (used in /session/score only)
     RichContent:
       type: object
       required:
@@ -486,17 +540,26 @@ components:
         event:
           $ref: '#/components/schemas/EventType'
         exerciseStatus:
+          description: |
+            Applies to evaluation events. The status of the students work for this math problem. 
+          $ref: '#/components/schemas/ExerciseStatus'
+        inputStatus:
+          description: |
+            Applies to evaluation events. The status of the students work on the current part of this math problem. 
           $ref: '#/components/schemas/ExerciseStatus'
         progress:
           type: number
           description: Value between 0 and 1 indicating the progress of the interaction. A value of 1 corresponds to a fully correct answer. Note that progress is not a mark.
-        inputStatus:
-          $ref: '#/components/schemas/ExerciseStatus'
         tags:
           type: array
-          description: References to skill tags for this event, which indicate skills and optional misconceptions. Descriptions of these tags are provided in the tagDescriptions property of the session info.
+          description: References to skill tags for this event, which indicate skills and optional misconceptions. Descriptions of these tags are provided in the `tagDescriptions` property of the session info.
           items:
-            $ref: '#/components/schemas/FeedbackTag'
+            $ref: '#/components/schemas/SkillTag'
+        skillsTodo:
+          type: array
+          description: Estimate of skills needed to finish the derivation in this part. Descriptions of these skill IDs are provided in the `tagDescriptions` property of the session info.
+          items:
+            type: string
         annotations:
           type: array
           description: Meaningful information about the event. What information is provided depends on the question type.
@@ -529,8 +592,12 @@ components:
           $ref: '#/components/schemas/InteractionScoring'
         tags:
           type: array
+          description: |
+            References to skill tags for this interaction, compiled from errors, hints, completed derivations, and next step from 
+            incomplete derivations. See the `events`` property to see which event generated what skill tags. 
+            Descriptions of these tags are provided in the `tagDescriptions`` property of the session info.
           items:
-            $ref: '#/components/schemas/FeedbackTag'
+            $ref: '#/components/schemas/SkillTag'
         events:
           type: array
           items:
@@ -602,7 +669,7 @@ components:
         tagDescriptions:
           $ref: '#/components/schemas/TagDescriptions'
         scoring:
-          $ref: '#/components/schemas/InteractionScoring'
+          $ref: '#/components/schemas/ScoringResult'
     SessionLockRequest:
       type: object
       required:
@@ -632,6 +699,24 @@ components:
         sessionId:
           type: string
           description: Unique identifier for the session to retrieve information for.
+        withDerivations:
+          type: boolean
+          description: Include step-by-step derivations in the response. Default is true.
+        withEvents:
+          type: boolean
+          description: Include detailed informatin per event (evaluation, hint, etc) in the response. Default is true.
+        withEventAnnotations:
+          type: boolean
+          description: Include detailed event annotations in the event results. Applies if `withEvents` is enabled. Default is true.
+        withTags:
+          type: boolean
+          description: Include skill tags information in the response. Default is true.
+        withTagDescriptions:
+          type: boolean
+          description: Include tag descriptions in the response. Default is true.
+        withScoring:
+          type: boolean
+          description: Include scoring information in the response. Default is true.
     ElementItemInfoBase:
       type: object
       properties:
@@ -639,21 +724,6 @@ components:
           type: string
         score:
           type: number
-    TextItemInfo:
-      type: object
-      allOf:
-        - $ref: '#/components/schemas/ElementItemInfoBase'
-        - type: object
-          required:
-            - itemType
-            - content
-          properties:
-            itemType:
-              type: string
-              enum:
-                - TEXT
-            content:
-              type: string
     DerivationPart:
       oneOf:
         - type: object
@@ -680,6 +750,11 @@ components:
                 $ref: '#/components/schemas/DerivationPart'
             result:
               type: string
+            skills:
+              type: array
+              description: Estimate of skills needed to perform this step. Descriptions of these skill IDs are provided in the tagDescriptions.
+              items:
+                type: string
     InfoAnnotation:
       type: object
       required:
@@ -687,25 +762,58 @@ components:
       properties:
         type:
           $ref: '#/components/schemas/AnnotationType'
-        expr:
+        expression:
           type: string
-        main:
+          description: |
+            Mathematical expression in LaTeX format. 
+            For inline math inputs, uses \boxed{\color{blue} ...} to highlight input fields.
+            Replaces the former 'expr' field.
+        content:
           type: string
-        sub:
-          type: string
+          description: |
+            Annotation content in HTML format. This field combines the former 'main', 'sub', and 'text' fields.
+            For INPUT type annotations, contains the complete question view with student inputs encoded as:
+            - <math-field> tags for mathematical input fields
+            - <choice-field label="X"> tags for multiple choice options
+            - \boxed{\color{blue} ...} for inline math expression inputs
+        gapIndex:
+          type: integer
+          description: Index of the gap in a Fill in the Blanks question, starting from 1
+        row:
+          type: integer
+          description: Row index in a Math Table question, starting from 1
+        col:
+          type: integer
+          description: Column index in a Math Table question, starting from 1
     EventResultInfo:
       type: object
+      required:
+        - timestamp
+        - event
       properties:
         timestamp:
           type: integer
           description: Timestamp of the event in milliseconds since the epoch.
         event:
           $ref: '#/components/schemas/EventType'
+        exerciseStatus:
+          description: |
+            Applies to evaluation events. The status of the students work for this math problem. 
+          $ref: '#/components/schemas/ExerciseStatus'
+        inputStatus:
+          description: |
+            Applies to evaluation events. The status of the students work on the current part of this math problem. 
+          $ref: '#/components/schemas/ExerciseStatus'
         tags:
           type: array
-          description: References to skill tags for this event, which indicate skills and optional misconceptions. Descriptions of these tags are provided in the tagDescriptions property of the session info.
+          description: References to skill tags for this event, which indicate skills and optional misconceptions. Descriptions of these tags are provided in the `tagDescriptions` property of the session info.
           items:
-            $ref: '#/components/schemas/FeedbackTag'
+            $ref: '#/components/schemas/SkillTag'
+        skillsTodo:
+          type: array
+          description: Estimate of skills needed to finish the derivation in this part. Descriptions of these skill IDs are provided in the `tagDescriptions` property of the session info.
+          items:
+            type: string
         annotations:
           type: array
           description: Meaningful information about the event. What information is provided depends on the question type.
@@ -733,8 +841,12 @@ components:
           $ref: '#/components/schemas/InteractionScoring'
         tags:
           type: array
+          description: |
+            References to skill tags for this interaction, compiled from errors, hints, completed derivations, and next step from 
+            incomplete derivations. See the `events`` property to see which event generated what skill tags. 
+            Descriptions of these tags are provided in the `tagDescriptions`` property of the session info.
           items:
-            $ref: '#/components/schemas/FeedbackTag'
+            $ref: '#/components/schemas/SkillTag'
         events:
           type: array
           items:
@@ -772,6 +884,21 @@ components:
               nullable: true
             result:
               $ref: '#/components/schemas/InteractionResultInfo'
+    TextItemInfo:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/ElementItemInfoBase'
+        - type: object
+          required:
+            - itemType
+            - content
+          properties:
+            itemType:
+              type: string
+              enum:
+                - TEXT
+            content:
+              type: string
     ElementItemInfo:
       type: object
       required:
@@ -779,8 +906,8 @@ components:
       discriminator:
         propertyName: itemType
       oneOf:
-        - $ref: '#/components/schemas/TextItemInfo'
         - $ref: '#/components/schemas/InteractionInfo'
+        - $ref: '#/components/schemas/TextItemInfo'
     ElementInfo:
       type: object
       description: An Element is either a question block or a content block.
@@ -808,6 +935,8 @@ components:
             $ref: '#/components/schemas/ElementInfo'
         tagDescriptions:
           $ref: '#/components/schemas/TagDescriptions'
+        scoring:
+          $ref: '#/components/schemas/ScoringResult'
     ExerciseValidateRequest:
       oneOf:
         - type: object
@@ -915,12 +1044,12 @@ components:
             - type: string
               enum:
                 - latest
-        minorVersion:
-          type: integer
         metadata:
           type: object
           additionalProperties:
             type: string
+        contentVersion:
+          type: string
         numberOfLevels:
           type: integer
         interactions:
@@ -951,12 +1080,6 @@ components:
           type: string
           description: regular exercise, single reference, or arrangement exercise
   examples:
-    CreateSessionRequestExampleMinimal:
-      value:
-        exercises:
-          - exerciseId: fa42e943-8213-41a6-8a91-8c22a929ffe9
-            version: latest
-        apiVersion: 2
     CreateSessionRequestExampleMultiple:
       value:
         exercises:
@@ -998,11 +1121,11 @@ components:
     SessionRetrieveRequestExample:
       value:
         sessionIds:
-          - 0a405901-8b89-4665-9ea0-6dbdff3602fc
+          - 77aca88f-e2f4-4daf-ba2e-41008fee1f9a
     SessionRetrieveResponseExample:
       value:
         - success: true
-          sessionId: 0a405901-8b89-4665-9ea0-6dbdff3602fc
+          sessionId: 77aca88f-e2f4-4daf-ba2e-41008fee1f9a
           type: SINGLE
           solution: false
           marksTotal: 1
@@ -1011,11 +1134,15 @@ components:
               type: MULTISTEP
               marks: 1
               scorable: true
-          html: <akit-exercise session-id="0a405901-8b89-4665-9ea0-6dbdff3602fc" akit-init="inline" ><script type="algebrakit/init-data">{...}</script></akit-exercise>
+          html: '<akit-exercise session-id="77aca88f-e2f4-4daf-ba2e-41008fee1f9a" app-id="algebrakit.testbench-akit-main-v2_default" akit-init="inline" ><script type="algebrakit/init-data">{"events":{"_main":[{"name":"createQuestion","timestamp":1752395839521,"in":{"id":"Q1"},"out":{"newQuestionId":"Q1","interactions":[{"refId":"lNzHy"}]}}],"lNzHy":[{"name":"evaluate","timestamp":1752395844080,"in":{"type":"evaluate","input":[{"type":"expression","expression":"6p-1=4p+10","syntax":"LATEX"}]},"out":{"success":true,"score":{"marks":{"max":0,"min":0},"marksEarned":0,"marksTotal":1,"penalties":{"marksPenalty":0,"hintsRequested":0,"mathErrors":1},"finished":false,"stepList":[{"parents":[],"name":"solution","latexName":null,"definitionIndex":0,"marks":1,"marksMin":0,"marksMax":0,"description":null}]},"progress":0,"exerciseStatus":"CORRECT","tags":[{"ID":"ExpandSingleBrackets","weight":100,"source":"ERROR_FEEDBACK","errors":["SkippingTerms"]}],"strategy":{"stepList":[{"parents":[],"name":"solution","latexName":null,"definitionIndex":0,"marks":1,"marksMin":0,"marksMax":0,"description":null}],"marksMin":0,"marksMax":0,"marksTotal":1,"marks":1},"hintAvailable":true,"inputResultList":[{"type":"expression","status":"ERROR","tags":[{"ID":"ExpandSingleBrackets","weight":100,"source":"ERROR_FEEDBACK","errors":["SkippingTerms"]}],"inputExp":[{"mimeType":"application/x-tex","content":"$$6p-1=4p+10$$"}],"feedbackList":[{"expression":[{"mimeType":"application/x-tex","content":"$$6 p - \\begingroup\\color{darkred}\\begingroup 1\\endgroup\\endgroup=4 p + 10$$","akit":"DerivationContext[Solve[6 p+Highlight[-1]=4 p+10, p, True],Exact=>True]"}],"description":{"id":"`@backward/algebra/expand/expand/title1 `","headLine":[{"mimeType":"text/plain","content":"You did not compute the multiplication correctly."}],"subLine":[{"mimeType":"text/plain","content":"You did not multiply all terms of "},{"mimeType":"application/x-tex","content":"$p - 1$","akit":"p+-1"},{"mimeType":"text/plain","content":" by "},{"mimeType":"application/x-tex","content":"$6$","akit":"6"},{"mimeType":"text/plain","content":"."}]},"tags":[{"ID":"ExpandSingleBrackets","weight":100,"source":"ERROR_FEEDBACK","errors":["SkippingTerms"]}]}],"node":{"v":"_solution","parents":[],"lead":[{"mimeType":"application/x-tex","content":"$$6 \\left(p - 1\\right)=4 p + 10$$","akit":"DerivationContext[Solve[6(p+-1)=4 p+10, p, True],Exact=>True]"}],"isLeadHighlighted":false,"hintAvailable":true,"trivial":false},"derivationSkillTags":["ExpandSingleBrackets","EquationsBalanceMethodArrangeTerms","EquationsOperationsAdd","AlgebraAddingLikeTerms","EquationsBalanceMethodArrangeTerms","EquationsOperationsAdd","EquationsBalanceMethodDivideCoefficient","EquationsOperationsMultiply"],"progress":0}]}},{"name":"evaluate","timestamp":1752395846387,"in":{"type":"evaluate","input":[{"type":"expression","expression":"6p-6=4p+10","syntax":"LATEX"}]},"out":{"success":true,"score":{"marks":{"max":0,"min":0},"marksEarned":0,"marksTotal":1,"penalties":{"marksPenalty":0,"hintsRequested":0,"mathErrors":1},"finished":false,"stepList":[{"parents":[],"name":"solution","latexName":null,"definitionIndex":0,"marks":1,"marksMin":0,"marksMax":0,"description":null}]},"progress":0,"exerciseStatus":"CORRECT","tags":[{"ID":"EquationsBalanceMethodArrangeTerms","source":"NEXT_STEP"},{"ID":"EquationsOperationsAdd","source":"NEXT_STEP"}],"strategy":{"stepList":[{"parents":[],"name":"solution","latexName":null,"definitionIndex":0,"marks":1,"marksMin":0,"marksMax":0,"description":null}],"marksMin":0,"marksMax":0,"marksTotal":1,"marks":1},"hintAvailable":true,"inputResultList":[{"type":"expression","status":"CORRECT","tags":[],"inputExp":[{"mimeType":"application/x-tex","content":"$$6p-6=4p+10$$"}],"node":{"v":"_solution","parents":[],"lead":[{"mimeType":"application/x-tex","content":"$$6 p - 6=4 p + 10$$","akit":"DerivationContext[Solve[6 p+-6=4 p+10, p, True],Exact=>True]"}],"isLeadHighlighted":false,"hintAvailable":true,"trivial":false},"derivationSkillTags":["ExpandSingleBrackets","EquationsBalanceMethodArrangeTerms","EquationsOperationsAdd","AlgebraAddingLikeTerms","EquationsBalanceMethodArrangeTerms","EquationsOperationsAdd","EquationsBalanceMethodDivideCoefficient","EquationsOperationsMultiply"],"remainingSkillTags":["EquationsBalanceMethodArrangeTerms","EquationsOperationsAdd","AlgebraAddingLikeTerms","EquationsBalanceMethodDivideCoefficient","EquationsOperationsMultiply"],"nextStepSkillTags":["EquationsBalanceMethodArrangeTerms","EquationsOperationsAdd"],"progress":0}]}},{"name":"hint","timestamp":1752395850393,"in":{"type":"hint","sessionId":"77aca88f-e2f4-4daf-ba2e-41008fee1f9a","refId":"lNzHy"},"out":{"hintNode":{"v":"_solution","parents":[],"taskList":[{"id":"`@vergelijkingen/linear/balansmethode_(variabele)/title `","headLine":[{"mimeType":"text/plain","content":"Balance method: subtract "},{"mimeType":"application/x-tex","content":"$4 p $","akit":"4 p"},{"mimeType":"text/plain","content":" from both sides"}]}],"lead":[{"mimeType":"application/x-tex","content":"$$\\begingroup\\color{#336699}\\begingroup 6 p \\endgroup\\endgroup- 6=\\begingroup\\color{#336699}\\begingroup 4 p \\endgroup\\endgroup+ 10$$","akit":"DerivationContext[Highlight[6 p]+-6=Highlight[4 p]+10,Exact=>True]"}],"isLeadHighlighted":true,"hintAvailable":true,"trivial":false},"completedNodesForGoal":[],"completedNodesForHint":[],"dataNodesForGoal":[],"dataNodesForHint":[],"nextHintAvailable":false,"tags":[{"ID":"EquationsBalanceMethodArrangeTerms","source":"HINT"},{"ID":"EquationsOperationsAdd","source":"HINT"}],"empty":false,"success":true,"score":{"marks":{"max":0,"min":0},"marksEarned":0,"marksTotal":1,"penalties":{"marksPenalty":0,"hintsRequested":1,"mathErrors":1},"finished":false,"stepList":[{"parents":[],"name":"solution","latexName":null,"definitionIndex":0,"marks":1,"marksMin":0,"marksMax":0,"description":null}]}}},{"name":"evaluate","timestamp":1752395852101,"in":{"type":"evaluate","input":[{"type":"expression","expression":"2p=16","syntax":"LATEX"}]},"out":{"success":true,"score":{"marks":{"max":0,"min":0},"marksEarned":0,"marksTotal":1,"penalties":{"marksPenalty":0,"hintsRequested":1,"mathErrors":1},"finished":false,"stepList":[{"parents":[],"name":"solution","latexName":null,"definitionIndex":0,"marks":1,"marksMin":0,"marksMax":0,"description":null}]},"progress":0,"exerciseStatus":"CORRECT","tags":[{"ID":"EquationsBalanceMethodDivideCoefficient","source":"NEXT_STEP"},{"ID":"EquationsOperationsMultiply","source":"NEXT_STEP"}],"strategy":{"stepList":[{"parents":[],"name":"solution","latexName":null,"definitionIndex":0,"marks":1,"marksMin":0,"marksMax":0,"description":null}],"marksMin":0,"marksMax":0,"marksTotal":1,"marks":1},"hintAvailable":true,"inputResultList":[{"type":"expression","status":"CORRECT","tags":[],"inputExp":[{"mimeType":"application/x-tex","content":"$$2p=16$$"}],"node":{"v":"_solution","parents":[],"lead":[{"mimeType":"application/x-tex","content":"$$2 p =16$$","akit":"DerivationContext[Solve[2 p=16, p, True],Exact=>True]"}],"isLeadHighlighted":false,"hintAvailable":true,"trivial":false},"derivationSkillTags":["ExpandSingleBrackets","EquationsBalanceMethodArrangeTerms","EquationsOperationsAdd","AlgebraAddingLikeTerms","EquationsBalanceMethodArrangeTerms","EquationsOperationsAdd","EquationsBalanceMethodDivideCoefficient","EquationsOperationsMultiply"],"remainingSkillTags":["EquationsBalanceMethodDivideCoefficient","EquationsOperationsMultiply"],"nextStepSkillTags":["EquationsBalanceMethodDivideCoefficient","EquationsOperationsMultiply"],"progress":0}]}},{"name":"evaluate","timestamp":1752395854898,"in":{"type":"evaluate","input":[{"type":"expression","expression":"p=\\frac{16}{2}","syntax":"LATEX"}]},"out":{"success":true,"score":{"marks":{"max":0,"min":0},"marksEarned":0,"marksTotal":1,"penalties":{"marksPenalty":0,"hintsRequested":1,"mathErrors":1},"finished":false,"stepList":[{"parents":[],"name":"solution","latexName":null,"definitionIndex":0,"marks":1,"marksMin":0,"marksMax":0,"description":null}]},"progress":0.5,"exerciseStatus":"CORRECT","tags":[],"strategy":{"stepList":[{"parents":[],"name":"solution","latexName":null,"definitionIndex":0,"marks":1,"marksMin":0,"marksMax":0,"description":null}],"marksMin":0,"marksMax":0,"marksTotal":1,"marks":1},"hintAvailable":true,"inputResultList":[{"type":"expression","status":"CORRECT","tags":[],"inputExp":[{"mimeType":"application/x-tex","content":"$$p=\\frac{16}{2}$$"}],"node":{"v":"_solution","parents":[],"lead":[{"mimeType":"application/x-tex","content":"$$p =\\frac{16}{2}$$","akit":"DerivationContext[Solve[p=16/2, p, True],Exact=>True]"}],"isLeadHighlighted":false,"hintAvailable":true,"trivial":false},"derivationSkillTags":["ExpandSingleBrackets","EquationsBalanceMethodArrangeTerms","EquationsOperationsAdd","AlgebraAddingLikeTerms","EquationsBalanceMethodArrangeTerms","EquationsOperationsAdd","EquationsBalanceMethodDivideCoefficient","EquationsOperationsMultiply"],"remainingSkillTags":[],"nextStepSkillTags":[],"progress":0.5}]}},{"name":"hint","timestamp":1752395865482,"in":{"type":"hint","sessionId":"77aca88f-e2f4-4daf-ba2e-41008fee1f9a","refId":"lNzHy"},"out":{"hintNode":{"v":"_solution","parents":[],"taskList":[{"id":"`@rekenen/delen_arithmetic/title `","headLine":[{"mimeType":"text/plain","content":"Calculate: "},{"mimeType":"application/x-tex","content":"$\\frac{16}{2}$","akit":"16/2"}]}],"lead":[{"mimeType":"application/x-tex","content":"$$p =\\begingroup\\color{#336699}\\begingroup \\frac{16}{2}\\endgroup\\endgroup$$","akit":"DerivationContext[Solve[p=Highlight[16/2], p, True],Exact=>True]"}],"isLeadHighlighted":true,"hintAvailable":true,"trivial":false},"completedNodesForGoal":[],"completedNodesForHint":[],"dataNodesForGoal":[],"dataNodesForHint":[],"nextHintAvailable":false,"empty":false,"success":true,"score":{"marks":{"max":0,"min":0},"marksEarned":0,"marksTotal":1,"penalties":{"marksPenalty":0,"hintsRequested":2,"mathErrors":1},"finished":false,"stepList":[{"parents":[],"name":"solution","latexName":null,"definitionIndex":0,"marks":1,"marksMin":0,"marksMax":0,"description":null}]}}}]},"view":{"i18n":["uk","en"],"showHints":true,"numeralSystem":"ARABIC_DECIMALPOINT","elements":[{"id":"Q1","type":"QUESTION","instructionType":"SCRIPT","content":[{"mimeType":"text/plain","content":"<div data-ref-id=\"YGJ5Y\" data-ref-name=\"Block 1\">Solve the equation.</div>"}],"interactions":[{"id":"lNzHy","ans":{"id":"solution","type":"ALGEBRA","hasHint":true,"startExpression":[{"mimeType":"application/x-tex","content":"$$6\\left ( p - 1\\right ) = 4p + 10$$","akit":"Solve[VisualConcat[FormattedNumber[6, 0, 0], VisualFenced[VisualConcat[p, SymbolMinus, FormattedNumber[1, 0, 0]], SymbolLeftBracket, SymbolRightBracket], SymbolEquals, FormattedNumber[4, 0, 0], p, SymbolPlus, FormattedNumber[10, 0, 0]], p]"}]},"palette":"advanced","variables":["$p $"],"inline":false,"showHints":true,"hintAvailable":true,"widgetType":"AUTOMATIC","i18n":["uk","en"],"numeralSystem":"ARABIC_DECIMALPOINT","extendedInline":false,"interactionOptions":{"extendedInline":false},"enableCalculator":true,"scored":true,"marksTotal":1}],"resources":[]}],"assessmentMode":false,"questionMode":"ONE_BY_ONE"},"attributes":{}}</script></akit-exercise>'
     SessionScoreRequestExample:
       value:
-        sessionId: 0a405901-8b89-4665-9ea0-6dbdff3602fc
+        sessionId: 77aca88f-e2f4-4daf-ba2e-41008fee1f9a
         lockSession: true
+        withTags: true
+        withEvents: true
+        withEventAnnotations: true
+        withScoring: true
     SessionScoreResponseExample:
       value:
         questions:
@@ -1023,39 +1150,11 @@ components:
             interactions:
               - id: lNzHy
                 type: MULTISTEP
+                progress: 0.5
+                status: CORRECT
                 events:
-                  - timestamp: 1746337790414
-                    event: HINT
-                    tags:
-                      - id: ExpandSingleBrackets
-                        weight: 100
-                        source: HINT
-                    annotations:
-                      - type: HINT
-                        main:
-                          - mimeType: text/plain
-                            content: Expand the brackets
-                        sub:
-                          - mimeType: text/plain
-                            content: 'Multiply each term inside the parentheses by '
-                          - mimeType: application/x-tex
-                            content: $6$
-                            akit: '6'
-                        expr:
-                          - mimeType: application/x-tex
-                            content: $$\begingroup\color{#336699}\begingroup 6 \left(p - 1\right)\endgroup\endgroup=4 p + 10$$
-                            akit: DerivationContext[Solve[Highlight[6(p+-1)]=4 p+10, p, True],Exact=>True]
-                  - timestamp: 1746337794212
+                  - timestamp: 1752395844080
                     event: EVALUATE
-                    exerciseStatus: ERROR
-                    progress: 0
-                    tags:
-                      - id: ExpandSingleBrackets
-                        errors:
-                          - SkippingTerms
-                        weight: -100
-                        source: ERROR_FEEDBACK
-                    inputStatus: ERROR
                     annotations:
                       - type: INPUT_EXPRESSION
                         expr:
@@ -1082,235 +1181,168 @@ components:
                             akit: '6'
                           - mimeType: text/plain
                             content: .
-                  - timestamp: 1746337800209
+                    exerciseStatus: ERROR
+                    progress: 0
+                    inputStatus: ERROR
+                  - timestamp: 1752395846387
                     event: EVALUATE
+                    annotations:
+                      - type: INPUT_EXPRESSION
+                        expr:
+                          - content: 6p-6=4p+10
+                            mimeType: application/x-tex
                     exerciseStatus: CORRECT
                     progress: 0
-                    tags: []
                     inputStatus: CORRECT
+                  - timestamp: 1752395850393
+                    event: HINT
+                    annotations:
+                      - type: HINT
+                        main:
+                          - mimeType: text/plain
+                            content: 'Balance method: subtract '
+                          - mimeType: application/x-tex
+                            content: $4 p $
+                            akit: 4 p
+                          - mimeType: text/plain
+                            content: ' from both sides'
+                        expr:
+                          - mimeType: application/x-tex
+                            content: $$\begingroup\color{#336699}\begingroup 6 p \endgroup\endgroup- 6=\begingroup\color{#336699}\begingroup 4 p \endgroup\endgroup+ 10$$
+                            akit: DerivationContext[Highlight[6 p]+-6=Highlight[4 p]+10,Exact=>True]
+                  - timestamp: 1752395852101
+                    event: EVALUATE
                     annotations:
                       - type: INPUT_EXPRESSION
                         expr:
                           - content: 2p=16
                             mimeType: application/x-tex
-                  - timestamp: 1746337804792
+                    exerciseStatus: CORRECT
+                    progress: 0
+                    inputStatus: CORRECT
+                  - timestamp: 1752395854898
                     event: EVALUATE
-                    exerciseStatus: FINISHED
-                    progress: 1
-                    tags:
-                      - id: ExpandSingleBrackets
-                        weight: 100
-                        source: FINISHED_STEP
-                      - id: EquationsBalanceMethodArrangeTerms
-                        weight: 100
-                        source: FINISHED_STEP
-                      - id: EquationsOperationsAdd
-                        weight: 100
-                        source: FINISHED_STEP
-                      - id: AlgebraAddingLikeTerms
-                        weight: 100
-                        source: FINISHED_STEP
-                      - id: EquationsBalanceMethodArrangeTerms
-                        weight: 100
-                        source: FINISHED_STEP
-                      - id: EquationsOperationsAdd
-                        weight: 100
-                        source: FINISHED_STEP
-                      - id: EquationsBalanceMethodDivideCoefficient
-                        weight: 100
-                        source: FINISHED_STEP
-                      - id: EquationsOperationsMultiply
-                        weight: 100
-                        source: FINISHED_STEP
-                    inputStatus: FINISHED
                     annotations:
                       - type: INPUT_EXPRESSION
                         expr:
-                          - content: p=\frac{16}{2}=8
+                          - content: p=\frac{16}{2}
                             mimeType: application/x-tex
-                progress: 1
-                tags:
-                  - id: ExpandSingleBrackets
-                    weight: 100
-                    source: HINT
-                status: FINISHED
+                    exerciseStatus: CORRECT
+                    progress: 0.5
+                    inputStatus: CORRECT
+                  - timestamp: 1752395865482
+                    event: HINT
+                    annotations:
+                      - type: HINT
+                        main:
+                          - mimeType: text/plain
+                            content: 'Calculate: '
+                          - mimeType: application/x-tex
+                            content: $\frac{16}{2}$
+                            akit: 16/2
+                        expr:
+                          - mimeType: application/x-tex
+                            content: $$p =\begingroup\color{#336699}\begingroup \frac{16}{2}\endgroup\endgroup$$
+                            akit: DerivationContext[Solve[p=Highlight[16/2], p, True],Exact=>True]
                 scoring:
-                  marksEarned: 1
+                  marksEarned: 0
                   marksTotal: 1
                   penalties:
                     marksPenalty: 0
-                    hintsRequested: 1
+                    hintsRequested: 2
                     mathErrors: 1
-                    notationErrors: 0
+                  finished: false
             scoring:
-              finished: true
+              finished: false
               marksTotal: 1
-              marksEarned: 1
-        tagDescriptions:
-          ExpandSingleBrackets:
-            descr:
-              en: Expanding a single pair of parentheses
-            stepType: ALGEBRA
-            errors:
-              - id: SkippingTerms
-                type:
-                  - MISCONCEPTION
-                descr:
-                  en: Not multiplying all terms by the factored constant.
+              marksEarned: 0
         scoring:
-          finished: true
-          marksEarned: 1
+          finished: false
+          marksEarned: 0
           marksTotal: 1
     SessionLockRequestExample:
       value:
         action: LOCK
         sessionIds:
-          - f2f62104-3b5a-4156-aeaf-291167e5f9e3
+          - 77aca88f-e2f4-4daf-ba2e-41008fee1f9a
     SessionInfoRequestExample:
       value:
-        sessionId: 0a405901-8b89-4665-9ea0-6dbdff3602fc
+        sessionId: 77aca88f-e2f4-4daf-ba2e-41008fee1f9a
+        withDerivations: true
+        withTags: true
+        withEvents: true
+        withEventAnnotations: true
+        withScoring: true
     SessionInfoResponseExample:
       value:
         success: true
+        creationTimestamp: 1752395839
         elements:
           - id: Q1
             type: QUESTION
             items:
               - itemType: TEXT
+                content: Solve the equation.
+              - itemType: TEXT
                 content: $$6\left ( p - 1\right ) = 4p + 10$$
               - id: lNzHy
                 itemType: INTERACTION
                 interactionType: MULTISTEP
+                result:
+                  status: CORRECT
+                  progress: 0.5
+                  events:
+                    - timestamp: 1752395844080
+                      event: EVALUATE
+                      tags:
+                        - id: ExpandSingleBrackets
+                          weight: 100
+                          errors:
+                            - SkippingTerms
+                          source: ERROR_FEEDBACK
+                      annotations:
+                        - type: INPUT
+                          content: $6p-1=4p+10$
+                        - type: ERROR_FEEDBACK
+                          content: <h1>You did not expand the parentheses correctly.</h1>You did not multiply all terms of  $p - 1$  by  $6$ .
+                          expression: $6 p - \begingroup\color{darkred}\begingroup 1\endgroup\endgroup=4 p + 10$
+                      exerciseStatus: ERROR
+                      progress: 0
+                      inputStatus: ERROR
+                  scoring:
+                    marksEarned: 0
+                    marksTotal: 1
+                    penalties:
+                      marksPenalty: 0
+                      hintsRequested: 2
+                      mathErrors: 1
+                    finished: false
                 solution: $$p =8$$
                 derivation:
                   - expression: $$6 \left(p - 1\right)=4 p + 10$$
                   - result: $$6 p - 6=4 p + 10$$
+                    skills:
+                      - ExpandSingleBrackets
                     description: Expand the brackets
                   - result: $$6 p - 4 p - 6=10$$
+                    skills:
+                      - EquationsBalanceMethodArrangeTerms
+                      - EquationsOperationsAdd
                     description: 'Balance method: subtract  $4 p $  from both sides'
                   - result: $$2 p - 6=10$$
+                    skills:
+                      - AlgebraAddingLikeTerms
                     description: Combine the similar terms
                   - result: $$2 p =16$$
+                    skills:
+                      - EquationsBalanceMethodArrangeTerms
+                      - EquationsOperationsAdd
                     description: 'Balance method: add  $6$  to both sides.'
                   - result: $$p =8$$
+                    skills:
+                      - EquationsBalanceMethodDivideCoefficient
+                      - EquationsOperationsMultiply
                     description: Divide both sides by  $2$
-                result:
-                  status: FINISHED
-                  progress: 1
-                  tags:
-                    - id: ExpandSingleBrackets
-                      weight: 100
-                      source: HINT
-                    - id: ExpandSingleBrackets
-                      errors:
-                        - SkippingTerms
-                      weight: -100
-                      source: ERROR_FEEDBACK
-                    - id: ExpandSingleBrackets
-                      weight: 100
-                      source: FINISHED_STEP
-                    - id: EquationsBalanceMethodArrangeTerms
-                      weight: 100
-                      source: FINISHED_STEP
-                    - id: EquationsOperationsAdd
-                      weight: 100
-                      source: FINISHED_STEP
-                    - id: AlgebraAddingLikeTerms
-                      weight: 100
-                      source: FINISHED_STEP
-                    - id: EquationsBalanceMethodArrangeTerms
-                      weight: 100
-                      source: FINISHED_STEP
-                    - id: EquationsOperationsAdd
-                      weight: 100
-                      source: FINISHED_STEP
-                    - id: EquationsBalanceMethodDivideCoefficient
-                      weight: 100
-                      source: FINISHED_STEP
-                    - id: EquationsOperationsMultiply
-                      weight: 100
-                      source: FINISHED_STEP
-                  events:
-                    - timestamp: 1746337790414
-                      event: HINT
-                      tags:
-                        - id: ExpandSingleBrackets
-                          weight: 100
-                          source: HINT
-                      annotations:
-                        - type: HINT
-                          main: Expand the brackets
-                          sub: Multiply each term inside the parentheses by  $6$
-                          expr: $$\begingroup\color{#336699}\begingroup 6 \left(p - 1\right)\endgroup\endgroup=4 p + 10$$
-                    - timestamp: 1746337794212
-                      event: EVALUATE
-                      exerciseStatus: ERROR
-                      progress: 0
-                      tags:
-                        - id: ExpandSingleBrackets
-                          errors:
-                            - SkippingTerms
-                          weight: -100
-                          source: ERROR_FEEDBACK
-                      inputStatus: ERROR
-                      annotations:
-                        - type: INPUT_EXPRESSION
-                          expr: $6p-1=4p+10$
-                        - type: ERROR_FEEDBACK
-                          main: You did not compute the multiplication correctly.
-                          sub: You did not multiply all terms of  $p - 1$  by  $6$ .
-                          expr: $$6 p - \begingroup\color{darkred}\begingroup 1\endgroup\endgroup=4 p + 10$$
-                    - timestamp: 1746337798237
-                      event: EVALUATE
-                      exerciseStatus: CORRECT
-                      progress: 0
-                      tags: []
-                      inputStatus: CORRECT
-                      annotations:
-                        - type: INPUT_EXPRESSION
-                          expr: $6p-6=4p+10$
-                    - timestamp: 1746337800209
-                      event: EVALUATE
-                      exerciseStatus: CORRECT
-                      progress: 0
-                      tags: []
-                      inputStatus: CORRECT
-                      annotations:
-                        - type: INPUT_EXPRESSION
-                          expr: $2p=16$
-                    - timestamp: 1746337804792
-                      event: EVALUATE
-                      exerciseStatus: FINISHED
-                      progress: 1
-                      tags:
-                        - id: ExpandSingleBrackets
-                          weight: 100
-                          source: FINISHED_STEP
-                        - id: EquationsBalanceMethodArrangeTerms
-                          weight: 100
-                          source: FINISHED_STEP
-                        - id: EquationsOperationsAdd
-                          weight: 100
-                          source: FINISHED_STEP
-                        - id: AlgebraAddingLikeTerms
-                          weight: 100
-                          source: FINISHED_STEP
-                        - id: EquationsBalanceMethodArrangeTerms
-                          weight: 100
-                          source: FINISHED_STEP
-                        - id: EquationsOperationsAdd
-                          weight: 100
-                          source: FINISHED_STEP
-                        - id: EquationsBalanceMethodDivideCoefficient
-                          weight: 100
-                          source: FINISHED_STEP
-                        - id: EquationsOperationsMultiply
-                          weight: 100
-                          source: FINISHED_STEP
-                      inputStatus: FINISHED
-                      annotations:
-                        - type: INPUT_EXPRESSION
-                          expr: $p=\frac{16}{2}=8$
         tagDescriptions:
           ExpandSingleBrackets:
             descr:
@@ -1342,6 +1374,10 @@ components:
             descr:
               en: Multiply or divide an equation using the balance method
             stepType: STRATEGY
+        scoring:
+          finished: false
+          marksEarned: 0
+          marksTotal: 1
     ExerciseValidateRequestExample:
       value:
         exerciseId: e6cef2b5-b114-4931-ac68-b77289d7c0a3
@@ -1355,24 +1391,27 @@ components:
           Wp0Hr:
             type: MULTISTEP
             marks: 1
+    ExerciseInfoRequestExample:
+      value:
+        id: fa42e943-8213-41a6-8a91-8c22a929ffe9
     ExerciseInfoResponseExample:
       value:
-        commitHistory:
-          - versionNumber: 1.0.0
-            commitDate: '2024-01-01T12:00:00Z'
-            commitMessage: Initial version.
-            authorUsername: author1
-        id: exercise-123
+        commitHistory: []
+        id: fa42e943-8213-41a6-8a91-8c22a929ffe9
+        endpoint: https://algebrakit.eu
         publishedVersions:
-          - name: Algebra Basics
-            majorVersion: latest
+          - name: A linear equation
+            resources: []
             metadata:
-              topic: Algebra
+              question-type: Multistep
+              creator: Algebrakit
+            contentVersion: '11.0'
             numberOfLevels: 0
             interactions:
               - block: Question a
-                refId: Wp0Hr
+                refId: lNzHy
                 type: MULTISTEP
                 refName: I1
-        courseName: Algebra 101
+            majorVersion: latest
+        courseName: AlgebraKiT-demo
         type: regular exercise

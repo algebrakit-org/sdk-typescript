@@ -16,8 +16,11 @@ export interface SessionScoreResponse {
 export interface SessionLockResponse {}
 
 export interface SessionInfoResponse {
+  success?: boolean;
+  creationTimestamp?: number;
   elements: Array<ElementInfo>;
   tagDescriptions: Record<string, TagDescription>;
+  scoring?: InteractionScoring;
 }
 
 export type SessionRetrieveResponse = Array<SessionData>;
