@@ -27,7 +27,6 @@ export interface InteractionScoring {
     marksPenalty?: number;
     hintsRequested?: number;
     mathErrors?: number;
-    notationErrors?: number;
   };
 }
 
