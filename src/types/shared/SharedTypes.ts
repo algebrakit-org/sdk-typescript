@@ -27,7 +27,6 @@ export interface InteractionScoring {
     marksPenalty?: number;
     hintsRequested?: number;
     mathErrors?: number;
-    notationErrors?: number;
   };
 }
 
@@ -74,6 +73,10 @@ export interface InteractionEvent {
   annotations?: Array<Annotation>;
 }
 
+// AnnotationType enum for better type safety
+export type AnnotationType = 'HINT' | 'ERROR_FEEDBACK' | 'INPUT_EXPRESSION' | 'SELECTED_OPTIONS' | 'INPUT';
+
+// Used for /session/score endpoint (maintains backward compatibility)
 export interface Annotation {
   type: 'INPUT_EXPRESSION' | 'ERROR_FEEDBACK' | 'SELECTED_OPTIONS' | 'INPUT_CONTENT';
   expr?: Array<RichContent>;
@@ -94,6 +97,7 @@ export interface ElementInfo {
 }
 
 export interface ElementItemInfo {
+  id?: string;
   itemType: 'TEXT' | 'INTERACTION';
   interactionType?: InteractionType;
   content?: string;
@@ -107,6 +111,7 @@ export interface DerivationPart {
   expression?: string;
   result?: string;
   description?: string;
+  skills?: Array<string>;
   derivation?: Array<DerivationPart>;
 }
 
@@ -121,15 +126,23 @@ export interface InteractionResultInfo {
 export interface EventResultInfo {
   timestamp: number;
   event: 'EVALUATE' | 'HINT' | 'GIVEUP' | 'SUBMIT';
+  exerciseStatus?: ExerciseStatus;
+  progress?: number;
+  inputStatus?: ExerciseStatus;
   tags?: Array<FeedbackTag>;
   annotations?: Array<InfoAnnotation>;
+  skillsTodo?: Array<string>;
 }
 
+// Used for /session/info endpoint (AL-3197 changes)
 export interface InfoAnnotation {
-  type: 'INPUT_EXPRESSION' | 'ERROR_FEEDBACK' | 'SELECTED_OPTIONS' | 'INPUT_CONTENT';
-  expr?: string;
-  main?: string;
-  sub?: string;
+  type: AnnotationType;
+  content?: string;    // HTML format - combines former main, sub, and text fields
+  expression?: string; // LaTeX format - replaces former expr field
+  // Additional fields for specific interaction types
+  gapIndex?: number;   // For Fill in the Blanks questions (1-indexed)
+  row?: number;        // For Math Table questions (1-indexed)
+  col?: number;        // For Math Table questions (1-indexed)
 }
 
 export interface InteractionDescription {
