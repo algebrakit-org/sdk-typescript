@@ -33,8 +33,8 @@ export class ApiClient {
     this.axiosInstance = axios.create({
       baseURL: baseUrl,
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        'x-api-key': apiKey
       },
     });
   }
