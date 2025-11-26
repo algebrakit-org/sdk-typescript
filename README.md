@@ -2,14 +2,6 @@
 
 This is a Node.js/TypeScript SDK for interacting with the Algebrakit Webservice API. It provides methods for creating sessions, retrieving scores, locking/unlocking sessions, and fetching session information.
 
-## Installation
-
-Install the SDK using npm:
-
-```bash
-npm install algebrakit-sdk
-```
-
 ## Usage
 
 ### Initialize the API Client
