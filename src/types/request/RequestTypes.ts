@@ -4,13 +4,13 @@ export interface CreateSessionRequest {
   exercises: Array<{
     exerciseId?: string;
     version?: string;
-    exerciseSpec?: Record<string, unknown>;
+    exerciseSpec?: Record<string, any>;
     sessionId?: string;
   }>;
   scoringModel?: string;
   assessmentMode?: boolean;
   requireLockForSolution?: boolean;
-  apiVersion: 2;
+  apiVersion: number;
 }
 
 export interface SessionScoreRequest {
