@@ -1,5 +1,11 @@
 // Request types for the Algebrakit Webservice API
 
+export interface CreateSessionOptions {
+  validate?: boolean;
+  productionMode?: boolean;
+  generateDebugInfo?: boolean;
+}
+
 export interface CreateSessionRequest {
   exercises: Array<{
     exerciseId?: string;
@@ -7,6 +13,7 @@ export interface CreateSessionRequest {
     exerciseSpec?: Record<string, unknown>;
     sessionId?: string;
   }>;
+  options?: CreateSessionOptions;
   scoringModel?: string;
   assessmentMode?: boolean;
   requireLockForSolution?: boolean;

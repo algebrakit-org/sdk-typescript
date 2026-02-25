@@ -151,6 +151,20 @@ export interface InteractionDescription {
   scorable?: boolean;
 }
 
+export interface DebugInfoItem {
+  key: string;
+  value: string;
+}
+
+export interface DebugInfoBucket {
+  description: string;
+  items: DebugInfoItem[];
+}
+
+export interface DebugInformation {
+  buckets: DebugInfoBucket[];
+}
+
 export interface SessionData {
   success: boolean;
   msg?: string;
@@ -160,4 +174,5 @@ export interface SessionData {
   html: string;
   marksTotal: number;
   interactions: Record<string, InteractionDescription>;
+  debugInformation?: DebugInformation;
 }

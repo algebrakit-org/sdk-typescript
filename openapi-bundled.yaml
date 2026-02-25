@@ -139,13 +139,13 @@ paths:
         - ApiKeyAuth: []
   /session/info:
     post:
-      summary: Retrieve session info (beta)
+      summary: Retrieve session info
       description: |
         Retrieve detailed information about a session, including exercise layout, solutions, and scoring results.
-        This information provides more information than `/session/score`. However, calculating the solutions can be time-consuming so you should use 
-        `/session/score` when possible.
+        This endpoint provides human-readable (or AI-readable) information about the session, with enhanced annotation data 
+        that includes complete question views with student inputs.
 
-        This endpoint is in beta and may change in the future. It is recommended to use the `/session/score` endpoint for production use.
+        This endpoint will ultimately replace the `/session/score` endpoint.
       operationId: sessionInfo
       requestBody:
         required: true
@@ -226,6 +226,1902 @@ components:
       in: header
       name: X-API-KEY
   schemas:
+    IAK_Exercise:
+      type: object
+      properties:
+        type:
+          type: string
+          const: AK_Exercise
+        studentProfile:
+          type: string
+          description: ID of the student profile, which defines school level, language, etc.
+        symbols:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: The notation of the mathematical symbol in LaTeX notation. For example, "x", "\angle A_{1}", etc.
+              type:
+                type: string
+                enum:
+                  - VARIABLE
+                  - CONSTANT
+                  - FUNCTION
+                  - FREEVARIABLE
+                description: The type of the math symbol
+              synonym:
+                description: An optional synonym for the math symbol. This is required if a symbol has multiple interpretations. E.g. "m" can be mass or meter. Defining a synonym allows the exercise author to specify which interpretation to use in the exercise. E.g. "mMass" and "mMeter"
+                type: string
+              addToFormulaEditor:
+                description: Whether to add the symbol as a button to the formula editor.
+                type: boolean
+              notations:
+                description: Alternative notations for the symbol. For example, a line segment "AB" can also be written as "BA".
+                type: array
+                items:
+                  type: string
+            required:
+              - name
+              - type
+            additionalProperties: false
+          description: List of mathematical symbols (variables, units, functions, etc.) used in the exercise
+        elements:
+          type: array
+          items:
+            type: object
+            properties:
+              blocks:
+                type: array
+                items:
+                  anyOf:
+                    - type: object
+                      properties:
+                        type:
+                          type: string
+                          const: CONTENT
+                        content:
+                          type: string
+                          description: The content in this block in HTML format and LaTeX notation for math expressions. For example, "Calculate &lt;latex&gt;x&lt;/latex&gt; if &lt;latex&gt;2x + 3 = 7&lt;/latex&gt;".
+                      required:
+                        - type
+                        - content
+                      additionalProperties: false
+                    - type: object
+                      properties:
+                        type:
+                          type: string
+                          const: INTERACTION
+                        interaction:
+                          anyOf:
+                            - type: object
+                              properties:
+                                type:
+                                  type: string
+                                  const: CHOICE
+                                  description: The question type of this interaction, which is "CHOICE" for multiple choice questions.
+                                refId:
+                                  description: An optional reference ID for this interaction. If not provided, a pseudo ID will be generated.
+                                  type: string
+                                instruction:
+                                  description: The instruction or question prompt for this interaction
+                                  type: string
+                                scored:
+                                  description: Whether this interaction should be scored or not. Defaults to true.
+                                  type: boolean
+                                hints:
+                                  description: An optional list of general hints for this interaction. These are hints to get the student started and will be shown before any successful attempt is made.
+                                  type: array
+                                  items:
+                                    type: string
+                                spec:
+                                  type: object
+                                  properties:
+                                    options:
+                                      type: array
+                                      items:
+                                        type: object
+                                        properties:
+                                          content:
+                                            type: string
+                                            description: The content of the choice option in HTML format with LaTeX embedded in &lt;latex&gt;...&lt;/latex&gt; tags.
+                                          correct:
+                                            type: boolean
+                                            description: If true, this option is correct
+                                        required:
+                                          - content
+                                          - correct
+                                        additionalProperties: false
+                                      description: An array of choice options
+                                    shuffle:
+                                      type: boolean
+                                      description: If true, the options are shuffled
+                                    multipleSelect:
+                                      type: boolean
+                                      description: If true, multiple options can be selected
+                                  required:
+                                    - options
+                                    - shuffle
+                                    - multipleSelect
+                                  additionalProperties: false
+                              required:
+                                - type
+                                - spec
+                              additionalProperties: false
+                            - type: object
+                              properties:
+                                type:
+                                  type: string
+                                  const: FILL_IN_THE_BLANKS
+                                  description: The question type of this interaction, which is "FILL_IN_THE_BLANKS" for fill-in-the-blank questions.
+                                refId:
+                                  description: An optional reference ID for this interaction. If not provided, a pseudo ID will be generated.
+                                  type: string
+                                instruction:
+                                  description: The instruction or question prompt for this interaction
+                                  type: string
+                                scored:
+                                  description: Whether this interaction should be scored or not. Defaults to true.
+                                  type: boolean
+                                hints:
+                                  description: An optional list of general hints for this interaction. These are hints to get the student started and will be shown before any successful attempt is made.
+                                  type: array
+                                  items:
+                                    type: string
+                                content:
+                                  type: string
+                                  description: The content string in HTML with optional embedded LaTeX and placeholders in square brackets for fields. E.g. 'Calculate &lt;latex&gt;\sqrt{x^2}=&lt;/latex&gt; &lt;blank id="B1"&gt;&lt;/blank&gt;.'
+                                blanks:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      id:
+                                        type: string
+                                        description: The unique identifier for this blank, used as a placeholder in the content string
+                                      size:
+                                        type: string
+                                        enum:
+                                          - SMALL
+                                          - MEDIUM
+                                          - LARGE
+                                        description: The size of the blank field
+                                      type:
+                                        type: string
+                                        enum:
+                                          - EXPRESSION
+                                          - SELECTION
+                                        description: The type of the blank field
+                                      input:
+                                        anyOf:
+                                          - type: object
+                                            properties:
+                                              task:
+                                                oneOf:
+                                                  - type: object
+                                                    properties:
+                                                      type:
+                                                        type: string
+                                                        const: SIMPLIFY
+                                                        description: Indicates the task is to simplify the given mathematical expression using mathematical and algebraic rules.
+                                                      expression:
+                                                        type: string
+                                                        description: The LaTeX string representing the mathematical expression to simplify.
+                                                    required:
+                                                      - type
+                                                      - expression
+                                                    additionalProperties: false
+                                                  - type: object
+                                                    properties:
+                                                      type:
+                                                        type: string
+                                                        const: SOLVE
+                                                        description: Indicates the task is to solve the given equation or inequality for a specific variable.
+                                                      expression:
+                                                        type: string
+                                                        description: The LaTeX string representing the equation or inequality to solve. For example, "x^2-4=0" or "2x+3>5".
+                                                      variable:
+                                                        type: string
+                                                        description: The variable to solve for, e.g. 'x'
+                                                      domain:
+                                                        description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                                        type: string
+                                                    required:
+                                                      - type
+                                                      - expression
+                                                      - variable
+                                                    additionalProperties: false
+                                                  - type: object
+                                                    properties:
+                                                      type:
+                                                        type: string
+                                                        const: SOLVE_SYSTEM
+                                                        description: Indicates the task is to solve a system of equations or inequalities for specific variables.
+                                                      variables:
+                                                        type: array
+                                                        items:
+                                                          type: string
+                                                        description: The variables to solve for, e.g. ['x', 'y']
+                                                      expression:
+                                                        type: string
+                                                        description: 'The LaTeX string representing the system of equations or inequalities in LaTeX. Write the system as a LaTeX set. For example: "{x+y=1, x-y=2}".'
+                                                      domain:
+                                                        description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                                        type: string
+                                                      restrictVariable:
+                                                        description: The variable to solve for. If not given, all variables in the system will be solved for.
+                                                        type: string
+                                                      method:
+                                                        description: The method to use for solving the system. If not given, the system will prefer the elimination method.
+                                                        type: string
+                                                        enum:
+                                                          - Eliminate
+                                                          - Substitute
+                                                          - Equate
+                                                    required:
+                                                      - type
+                                                      - variables
+                                                      - expression
+                                                    additionalProperties: false
+                                                  - type: object
+                                                    properties:
+                                                      type:
+                                                        type: string
+                                                        const: EXPAND
+                                                        description: Indicates the task is to expand the given mathematical expression, such as multiplying out brackets and applying exponentiation.
+                                                      expression:
+                                                        type: string
+                                                        description: The LaTeX string representing the mathematical expression to expand.
+                                                    required:
+                                                      - type
+                                                      - expression
+                                                    additionalProperties: false
+                                                  - type: object
+                                                    properties:
+                                                      type:
+                                                        type: string
+                                                        const: FACTOR
+                                                        description: Indicates the task is to factor the given mathematical expression, such as taking out common factors and factorising quadratics.
+                                                      expression:
+                                                        type: string
+                                                        description: The LaTeX string representing the mathematical expression to factor.
+                                                    required:
+                                                      - type
+                                                      - expression
+                                                    additionalProperties: false
+                                                  - type: object
+                                                    properties:
+                                                      type:
+                                                        type: string
+                                                        const: TOGETHER
+                                                        description: Indicates the task is to combine a sum of fractions into a single fraction.
+                                                      expression:
+                                                        type: string
+                                                        description: The LaTeX string representing the sum of fractions to combine into a single fraction.
+                                                    required:
+                                                      - type
+                                                      - expression
+                                                    additionalProperties: false
+                                                  - type: object
+                                                    properties:
+                                                      type:
+                                                        type: string
+                                                        const: COMPLETE_SQUARE
+                                                        description: Indicates the task is to complete the square for a quadratic expression with respect to a specific variable.
+                                                      variable:
+                                                        type: string
+                                                        description: The variable to complete the square for, e.g. 'x'
+                                                      expression:
+                                                        type: string
+                                                        description: The LaTeX string representing the quadratic expression to complete the square for.
+                                                    required:
+                                                      - type
+                                                      - variable
+                                                      - expression
+                                                    additionalProperties: false
+                                                  - type: object
+                                                    properties:
+                                                      type:
+                                                        type: string
+                                                        const: POLYNOMIAL_STANDARD_FORM
+                                                        description: Indicates the task is to convert a polynomial expression to its standard form. This involves expanding the expression and then rearranging it in descending powers of the specified variable.
+                                                      expression:
+                                                        type: string
+                                                        description: The LaTeX string representing the polynomial expression to convert to standard form.
+                                                      variable:
+                                                        type: string
+                                                        description: The variable to convert to standard form, e.g. 'x'
+                                                    required:
+                                                      - type
+                                                      - expression
+                                                      - variable
+                                                    additionalProperties: false
+                                                  - type: object
+                                                    properties:
+                                                      type:
+                                                        type: string
+                                                        const: POWER_STANDARD_FORM
+                                                        description: Indicates the task is to convert a power expression to its standard form. This involves rewriting radicals and fractions into exponent form.
+                                                      expression:
+                                                        type: string
+                                                        description: The LaTeX string representing the power expression to convert to standard form.
+                                                      variable:
+                                                        type: string
+                                                        description: The variable to convert to standard form, e.g. 'x'
+                                                    required:
+                                                      - type
+                                                      - expression
+                                                      - variable
+                                                    additionalProperties: false
+                                                  - type: object
+                                                    properties:
+                                                      type:
+                                                        type: string
+                                                        const: EXPONENTIAL_STANDARD_FORM
+                                                        description: Indicates the task is to convert an exponential expression to its standard form $b\cdot g^x$.
+                                                      variable:
+                                                        type: string
+                                                        description: The variable to convert to standard form, e.g. 'x'
+                                                      expression:
+                                                        type: string
+                                                        description: The LaTeX string representing the exponential expression to convert to standard form.
+                                                    required:
+                                                      - type
+                                                      - variable
+                                                      - expression
+                                                    additionalProperties: false
+                                                  - type: object
+                                                    properties:
+                                                      type:
+                                                        type: string
+                                                        const: CARTESIAN_TO_POLAR_FORM
+                                                        description: Indicates the task is to convert Cartesian coordinates to polar coordinates.
+                                                      expression:
+                                                        type: string
+                                                        description: The LaTeX string representing the Cartesian coordinates to convert to polar coordinates.
+                                                    required:
+                                                      - type
+                                                      - expression
+                                                    additionalProperties: false
+                                                  - type: object
+                                                    properties:
+                                                      type:
+                                                        type: string
+                                                        const: POLAR_TO_CARTESIAN_FORM
+                                                        description: Indicates the task is to convert polar coordinates to Cartesian coordinates.
+                                                      expression:
+                                                        type: string
+                                                        description: The LaTeX string representing the polar coordinates to convert to Cartesian coordinates.
+                                                    required:
+                                                      - type
+                                                      - expression
+                                                    additionalProperties: false
+                                                description: The task that the student needs to perform for this expression part. This defines what the student is expected to do with the given expression, such as simplifying it, factoring it, or converting it to a different form.
+                                              unit:
+                                                description: An optional unit associated with the expression
+                                                type: string
+                                              accuracy:
+                                                description: An optional accuracy specification that defines how to evaluate the student's answer for this expression part. If not provided, a default evaluation method will be used.
+                                                type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    enum:
+                                                      - ROUND
+                                                      - ROUND_UP
+                                                      - ROUND_DOWN
+                                                      - ACCURATE
+                                                      - PRECISION
+                                                    description: The type of accuracy to be applied
+                                                  nr:
+                                                    type: number
+                                                    description: The numerical value associated with the accuracy
+                                                required:
+                                                  - type
+                                                  - nr
+                                                additionalProperties: false
+                                            required:
+                                              - task
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              options:
+                                                type: array
+                                                items:
+                                                  type: object
+                                                  properties:
+                                                    content:
+                                                      type: string
+                                                      description: The content of the choice option in HTML format with LaTeX embedded in &lt;latex&gt;...&lt;/latex&gt; tags.
+                                                    correct:
+                                                      type: boolean
+                                                      description: If true, this option is correct
+                                                  required:
+                                                    - content
+                                                    - correct
+                                                  additionalProperties: false
+                                                description: An array of choice options
+                                              shuffle:
+                                                type: boolean
+                                                description: If true, the options are shuffled
+                                              multipleSelect:
+                                                type: boolean
+                                                description: If true, multiple options can be selected
+                                            required:
+                                              - options
+                                              - shuffle
+                                              - multipleSelect
+                                            additionalProperties: false
+                                        description: The specification for the input field associated with this blank
+                                    required:
+                                      - id
+                                      - size
+                                      - type
+                                      - input
+                                    additionalProperties: false
+                                  description: An array of blank specifications, each defining a field in the content string
+                                interchangables:
+                                  description: Defines which expression blanks are interchangeable. Each inner array contains symbols that are interchangeable. For example, [['B1', 'B2'], ['B3', 'B4', 'B5']] means that B1 and B2 are interchangeable, and B3, B4, B5 are interchangeable.
+                                  type: array
+                                  items:
+                                    type: array
+                                    items:
+                                      type: string
+                              required:
+                                - type
+                                - content
+                                - blanks
+                              additionalProperties: false
+                            - type: object
+                              properties:
+                                type:
+                                  type: string
+                                  const: MULTISTEP
+                                  description: The question type of this interaction, which is "MULTISTEP" for algebraic multi-step questions.
+                                refId:
+                                  description: An optional reference ID for this interaction. If not provided, a pseudo ID will be generated.
+                                  type: string
+                                instruction:
+                                  description: The instruction or question prompt for this interaction
+                                  type: string
+                                scored:
+                                  description: Whether this interaction should be scored or not. Defaults to true.
+                                  type: boolean
+                                hints:
+                                  description: An optional list of general hints for this interaction. These are hints to get the student started and will be shown before any successful attempt is made.
+                                  type: array
+                                  items:
+                                    type: string
+                                givenParts:
+                                  description: Optional given information that is provided to the student in the instruction. The keys are labels like 'G1', 'G2', etc. that can be referenced for expressions in other parts.'
+                                  type: object
+                                  propertyNames:
+                                    type: string
+                                  additionalProperties:
+                                    type: object
+                                    properties:
+                                      task:
+                                        oneOf:
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: SIMPLIFY
+                                                description: Indicates the task is to simplify the given mathematical expression using mathematical and algebraic rules.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the mathematical expression to simplify.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: SOLVE
+                                                description: Indicates the task is to solve the given equation or inequality for a specific variable.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the equation or inequality to solve. For example, "x^2-4=0" or "2x+3>5".
+                                              variable:
+                                                type: string
+                                                description: The variable to solve for, e.g. 'x'
+                                              domain:
+                                                description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                                type: string
+                                            required:
+                                              - type
+                                              - expression
+                                              - variable
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: SOLVE_SYSTEM
+                                                description: Indicates the task is to solve a system of equations or inequalities for specific variables.
+                                              variables:
+                                                type: array
+                                                items:
+                                                  type: string
+                                                description: The variables to solve for, e.g. ['x', 'y']
+                                              expression:
+                                                type: string
+                                                description: 'The LaTeX string representing the system of equations or inequalities in LaTeX. Write the system as a LaTeX set. For example: "{x+y=1, x-y=2}".'
+                                              domain:
+                                                description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                                type: string
+                                              restrictVariable:
+                                                description: The variable to solve for. If not given, all variables in the system will be solved for.
+                                                type: string
+                                              method:
+                                                description: The method to use for solving the system. If not given, the system will prefer the elimination method.
+                                                type: string
+                                                enum:
+                                                  - Eliminate
+                                                  - Substitute
+                                                  - Equate
+                                            required:
+                                              - type
+                                              - variables
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: EXPAND
+                                                description: Indicates the task is to expand the given mathematical expression, such as multiplying out brackets and applying exponentiation.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the mathematical expression to expand.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: FACTOR
+                                                description: Indicates the task is to factor the given mathematical expression, such as taking out common factors and factorising quadratics.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the mathematical expression to factor.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: TOGETHER
+                                                description: Indicates the task is to combine a sum of fractions into a single fraction.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the sum of fractions to combine into a single fraction.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: COMPLETE_SQUARE
+                                                description: Indicates the task is to complete the square for a quadratic expression with respect to a specific variable.
+                                              variable:
+                                                type: string
+                                                description: The variable to complete the square for, e.g. 'x'
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the quadratic expression to complete the square for.
+                                            required:
+                                              - type
+                                              - variable
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: POLYNOMIAL_STANDARD_FORM
+                                                description: Indicates the task is to convert a polynomial expression to its standard form. This involves expanding the expression and then rearranging it in descending powers of the specified variable.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the polynomial expression to convert to standard form.
+                                              variable:
+                                                type: string
+                                                description: The variable to convert to standard form, e.g. 'x'
+                                            required:
+                                              - type
+                                              - expression
+                                              - variable
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: POWER_STANDARD_FORM
+                                                description: Indicates the task is to convert a power expression to its standard form. This involves rewriting radicals and fractions into exponent form.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the power expression to convert to standard form.
+                                              variable:
+                                                type: string
+                                                description: The variable to convert to standard form, e.g. 'x'
+                                            required:
+                                              - type
+                                              - expression
+                                              - variable
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: EXPONENTIAL_STANDARD_FORM
+                                                description: Indicates the task is to convert an exponential expression to its standard form $b\cdot g^x$.
+                                              variable:
+                                                type: string
+                                                description: The variable to convert to standard form, e.g. 'x'
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the exponential expression to convert to standard form.
+                                            required:
+                                              - type
+                                              - variable
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: CARTESIAN_TO_POLAR_FORM
+                                                description: Indicates the task is to convert Cartesian coordinates to polar coordinates.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the Cartesian coordinates to convert to polar coordinates.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: POLAR_TO_CARTESIAN_FORM
+                                                description: Indicates the task is to convert polar coordinates to Cartesian coordinates.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the polar coordinates to convert to Cartesian coordinates.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                        description: The task that the student needs to perform for this expression part. This defines what the student is expected to do with the given expression, such as simplifying it, factoring it, or converting it to a different form.
+                                      unit:
+                                        description: An optional unit associated with the expression
+                                        type: string
+                                      accuracy:
+                                        description: An optional accuracy specification that defines how to evaluate the student's answer for this expression part. If not provided, a default evaluation method will be used.
+                                        type: object
+                                        properties:
+                                          type:
+                                            type: string
+                                            enum:
+                                              - ROUND
+                                              - ROUND_UP
+                                              - ROUND_DOWN
+                                              - ACCURATE
+                                              - PRECISION
+                                            description: The type of accuracy to be applied
+                                          nr:
+                                            type: number
+                                            description: The numerical value associated with the accuracy
+                                        required:
+                                          - type
+                                          - nr
+                                        additionalProperties: false
+                                      symbol:
+                                        description: An optional variable or function that represents this part. E.g. "E" if this part represents energy, or "f(x)" if it represents a function definition.
+                                        type: string
+                                      description:
+                                        description: An description of what this part represents. E.g "the total discount"
+                                        type: string
+                                      alternativeTasks:
+                                        description: An optional array of alternative tasks that are also accepted as correct answers for this part.
+                                        type: array
+                                        items:
+                                          oneOf:
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: SIMPLIFY
+                                                  description: Indicates the task is to simplify the given mathematical expression using mathematical and algebraic rules.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the mathematical expression to simplify.
+                                              required:
+                                                - type
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: SOLVE
+                                                  description: Indicates the task is to solve the given equation or inequality for a specific variable.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the equation or inequality to solve. For example, "x^2-4=0" or "2x+3>5".
+                                                variable:
+                                                  type: string
+                                                  description: The variable to solve for, e.g. 'x'
+                                                domain:
+                                                  description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                                  type: string
+                                              required:
+                                                - type
+                                                - expression
+                                                - variable
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: SOLVE_SYSTEM
+                                                  description: Indicates the task is to solve a system of equations or inequalities for specific variables.
+                                                variables:
+                                                  type: array
+                                                  items:
+                                                    type: string
+                                                  description: The variables to solve for, e.g. ['x', 'y']
+                                                expression:
+                                                  type: string
+                                                  description: 'The LaTeX string representing the system of equations or inequalities in LaTeX. Write the system as a LaTeX set. For example: "{x+y=1, x-y=2}".'
+                                                domain:
+                                                  description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                                  type: string
+                                                restrictVariable:
+                                                  description: The variable to solve for. If not given, all variables in the system will be solved for.
+                                                  type: string
+                                                method:
+                                                  description: The method to use for solving the system. If not given, the system will prefer the elimination method.
+                                                  type: string
+                                                  enum:
+                                                    - Eliminate
+                                                    - Substitute
+                                                    - Equate
+                                              required:
+                                                - type
+                                                - variables
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: EXPAND
+                                                  description: Indicates the task is to expand the given mathematical expression, such as multiplying out brackets and applying exponentiation.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the mathematical expression to expand.
+                                              required:
+                                                - type
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: FACTOR
+                                                  description: Indicates the task is to factor the given mathematical expression, such as taking out common factors and factorising quadratics.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the mathematical expression to factor.
+                                              required:
+                                                - type
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: TOGETHER
+                                                  description: Indicates the task is to combine a sum of fractions into a single fraction.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the sum of fractions to combine into a single fraction.
+                                              required:
+                                                - type
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: COMPLETE_SQUARE
+                                                  description: Indicates the task is to complete the square for a quadratic expression with respect to a specific variable.
+                                                variable:
+                                                  type: string
+                                                  description: The variable to complete the square for, e.g. 'x'
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the quadratic expression to complete the square for.
+                                              required:
+                                                - type
+                                                - variable
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: POLYNOMIAL_STANDARD_FORM
+                                                  description: Indicates the task is to convert a polynomial expression to its standard form. This involves expanding the expression and then rearranging it in descending powers of the specified variable.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the polynomial expression to convert to standard form.
+                                                variable:
+                                                  type: string
+                                                  description: The variable to convert to standard form, e.g. 'x'
+                                              required:
+                                                - type
+                                                - expression
+                                                - variable
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: POWER_STANDARD_FORM
+                                                  description: Indicates the task is to convert a power expression to its standard form. This involves rewriting radicals and fractions into exponent form.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the power expression to convert to standard form.
+                                                variable:
+                                                  type: string
+                                                  description: The variable to convert to standard form, e.g. 'x'
+                                              required:
+                                                - type
+                                                - expression
+                                                - variable
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: EXPONENTIAL_STANDARD_FORM
+                                                  description: Indicates the task is to convert an exponential expression to its standard form $b\cdot g^x$.
+                                                variable:
+                                                  type: string
+                                                  description: The variable to convert to standard form, e.g. 'x'
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the exponential expression to convert to standard form.
+                                              required:
+                                                - type
+                                                - variable
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: CARTESIAN_TO_POLAR_FORM
+                                                  description: Indicates the task is to convert Cartesian coordinates to polar coordinates.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the Cartesian coordinates to convert to polar coordinates.
+                                              required:
+                                                - type
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: POLAR_TO_CARTESIAN_FORM
+                                                  description: Indicates the task is to convert polar coordinates to Cartesian coordinates.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the polar coordinates to convert to Cartesian coordinates.
+                                              required:
+                                                - type
+                                                - expression
+                                              additionalProperties: false
+                                          description: A task that defines what the student is expected to do.
+                                    required:
+                                      - task
+                                    additionalProperties: false
+                                intermediateParts:
+                                  description: Optional intermediate results the student must calculate to solve the problem. The keys are labels like 'S1', 'S2', etc. that can be referenced for expressions in other parts.
+                                  type: object
+                                  propertyNames:
+                                    type: string
+                                  additionalProperties:
+                                    type: object
+                                    properties:
+                                      task:
+                                        oneOf:
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: SIMPLIFY
+                                                description: Indicates the task is to simplify the given mathematical expression using mathematical and algebraic rules.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the mathematical expression to simplify.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: SOLVE
+                                                description: Indicates the task is to solve the given equation or inequality for a specific variable.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the equation or inequality to solve. For example, "x^2-4=0" or "2x+3>5".
+                                              variable:
+                                                type: string
+                                                description: The variable to solve for, e.g. 'x'
+                                              domain:
+                                                description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                                type: string
+                                            required:
+                                              - type
+                                              - expression
+                                              - variable
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: SOLVE_SYSTEM
+                                                description: Indicates the task is to solve a system of equations or inequalities for specific variables.
+                                              variables:
+                                                type: array
+                                                items:
+                                                  type: string
+                                                description: The variables to solve for, e.g. ['x', 'y']
+                                              expression:
+                                                type: string
+                                                description: 'The LaTeX string representing the system of equations or inequalities in LaTeX. Write the system as a LaTeX set. For example: "{x+y=1, x-y=2}".'
+                                              domain:
+                                                description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                                type: string
+                                              restrictVariable:
+                                                description: The variable to solve for. If not given, all variables in the system will be solved for.
+                                                type: string
+                                              method:
+                                                description: The method to use for solving the system. If not given, the system will prefer the elimination method.
+                                                type: string
+                                                enum:
+                                                  - Eliminate
+                                                  - Substitute
+                                                  - Equate
+                                            required:
+                                              - type
+                                              - variables
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: EXPAND
+                                                description: Indicates the task is to expand the given mathematical expression, such as multiplying out brackets and applying exponentiation.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the mathematical expression to expand.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: FACTOR
+                                                description: Indicates the task is to factor the given mathematical expression, such as taking out common factors and factorising quadratics.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the mathematical expression to factor.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: TOGETHER
+                                                description: Indicates the task is to combine a sum of fractions into a single fraction.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the sum of fractions to combine into a single fraction.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: COMPLETE_SQUARE
+                                                description: Indicates the task is to complete the square for a quadratic expression with respect to a specific variable.
+                                              variable:
+                                                type: string
+                                                description: The variable to complete the square for, e.g. 'x'
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the quadratic expression to complete the square for.
+                                            required:
+                                              - type
+                                              - variable
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: POLYNOMIAL_STANDARD_FORM
+                                                description: Indicates the task is to convert a polynomial expression to its standard form. This involves expanding the expression and then rearranging it in descending powers of the specified variable.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the polynomial expression to convert to standard form.
+                                              variable:
+                                                type: string
+                                                description: The variable to convert to standard form, e.g. 'x'
+                                            required:
+                                              - type
+                                              - expression
+                                              - variable
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: POWER_STANDARD_FORM
+                                                description: Indicates the task is to convert a power expression to its standard form. This involves rewriting radicals and fractions into exponent form.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the power expression to convert to standard form.
+                                              variable:
+                                                type: string
+                                                description: The variable to convert to standard form, e.g. 'x'
+                                            required:
+                                              - type
+                                              - expression
+                                              - variable
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: EXPONENTIAL_STANDARD_FORM
+                                                description: Indicates the task is to convert an exponential expression to its standard form $b\cdot g^x$.
+                                              variable:
+                                                type: string
+                                                description: The variable to convert to standard form, e.g. 'x'
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the exponential expression to convert to standard form.
+                                            required:
+                                              - type
+                                              - variable
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: CARTESIAN_TO_POLAR_FORM
+                                                description: Indicates the task is to convert Cartesian coordinates to polar coordinates.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the Cartesian coordinates to convert to polar coordinates.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: POLAR_TO_CARTESIAN_FORM
+                                                description: Indicates the task is to convert polar coordinates to Cartesian coordinates.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the polar coordinates to convert to Cartesian coordinates.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                        description: The task that the student needs to perform for this expression part. This defines what the student is expected to do with the given expression, such as simplifying it, factoring it, or converting it to a different form.
+                                      unit:
+                                        description: An optional unit associated with the expression
+                                        type: string
+                                      accuracy:
+                                        description: An optional accuracy specification that defines how to evaluate the student's answer for this expression part. If not provided, a default evaluation method will be used.
+                                        type: object
+                                        properties:
+                                          type:
+                                            type: string
+                                            enum:
+                                              - ROUND
+                                              - ROUND_UP
+                                              - ROUND_DOWN
+                                              - ACCURATE
+                                              - PRECISION
+                                            description: The type of accuracy to be applied
+                                          nr:
+                                            type: number
+                                            description: The numerical value associated with the accuracy
+                                        required:
+                                          - type
+                                          - nr
+                                        additionalProperties: false
+                                      symbol:
+                                        description: An optional variable or function that represents this part. E.g. "E" if this part represents energy, or "f(x)" if it represents a function definition.
+                                        type: string
+                                      description:
+                                        description: An description of what this part represents. E.g "the total discount"
+                                        type: string
+                                      alternativeTasks:
+                                        description: An optional array of alternative tasks that are also accepted as correct answers for this part.
+                                        type: array
+                                        items:
+                                          oneOf:
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: SIMPLIFY
+                                                  description: Indicates the task is to simplify the given mathematical expression using mathematical and algebraic rules.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the mathematical expression to simplify.
+                                              required:
+                                                - type
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: SOLVE
+                                                  description: Indicates the task is to solve the given equation or inequality for a specific variable.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the equation or inequality to solve. For example, "x^2-4=0" or "2x+3>5".
+                                                variable:
+                                                  type: string
+                                                  description: The variable to solve for, e.g. 'x'
+                                                domain:
+                                                  description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                                  type: string
+                                              required:
+                                                - type
+                                                - expression
+                                                - variable
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: SOLVE_SYSTEM
+                                                  description: Indicates the task is to solve a system of equations or inequalities for specific variables.
+                                                variables:
+                                                  type: array
+                                                  items:
+                                                    type: string
+                                                  description: The variables to solve for, e.g. ['x', 'y']
+                                                expression:
+                                                  type: string
+                                                  description: 'The LaTeX string representing the system of equations or inequalities in LaTeX. Write the system as a LaTeX set. For example: "{x+y=1, x-y=2}".'
+                                                domain:
+                                                  description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                                  type: string
+                                                restrictVariable:
+                                                  description: The variable to solve for. If not given, all variables in the system will be solved for.
+                                                  type: string
+                                                method:
+                                                  description: The method to use for solving the system. If not given, the system will prefer the elimination method.
+                                                  type: string
+                                                  enum:
+                                                    - Eliminate
+                                                    - Substitute
+                                                    - Equate
+                                              required:
+                                                - type
+                                                - variables
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: EXPAND
+                                                  description: Indicates the task is to expand the given mathematical expression, such as multiplying out brackets and applying exponentiation.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the mathematical expression to expand.
+                                              required:
+                                                - type
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: FACTOR
+                                                  description: Indicates the task is to factor the given mathematical expression, such as taking out common factors and factorising quadratics.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the mathematical expression to factor.
+                                              required:
+                                                - type
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: TOGETHER
+                                                  description: Indicates the task is to combine a sum of fractions into a single fraction.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the sum of fractions to combine into a single fraction.
+                                              required:
+                                                - type
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: COMPLETE_SQUARE
+                                                  description: Indicates the task is to complete the square for a quadratic expression with respect to a specific variable.
+                                                variable:
+                                                  type: string
+                                                  description: The variable to complete the square for, e.g. 'x'
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the quadratic expression to complete the square for.
+                                              required:
+                                                - type
+                                                - variable
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: POLYNOMIAL_STANDARD_FORM
+                                                  description: Indicates the task is to convert a polynomial expression to its standard form. This involves expanding the expression and then rearranging it in descending powers of the specified variable.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the polynomial expression to convert to standard form.
+                                                variable:
+                                                  type: string
+                                                  description: The variable to convert to standard form, e.g. 'x'
+                                              required:
+                                                - type
+                                                - expression
+                                                - variable
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: POWER_STANDARD_FORM
+                                                  description: Indicates the task is to convert a power expression to its standard form. This involves rewriting radicals and fractions into exponent form.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the power expression to convert to standard form.
+                                                variable:
+                                                  type: string
+                                                  description: The variable to convert to standard form, e.g. 'x'
+                                              required:
+                                                - type
+                                                - expression
+                                                - variable
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: EXPONENTIAL_STANDARD_FORM
+                                                  description: Indicates the task is to convert an exponential expression to its standard form $b\cdot g^x$.
+                                                variable:
+                                                  type: string
+                                                  description: The variable to convert to standard form, e.g. 'x'
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the exponential expression to convert to standard form.
+                                              required:
+                                                - type
+                                                - variable
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: CARTESIAN_TO_POLAR_FORM
+                                                  description: Indicates the task is to convert Cartesian coordinates to polar coordinates.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the Cartesian coordinates to convert to polar coordinates.
+                                              required:
+                                                - type
+                                                - expression
+                                              additionalProperties: false
+                                            - type: object
+                                              properties:
+                                                type:
+                                                  type: string
+                                                  const: POLAR_TO_CARTESIAN_FORM
+                                                  description: Indicates the task is to convert polar coordinates to Cartesian coordinates.
+                                                expression:
+                                                  type: string
+                                                  description: The LaTeX string representing the polar coordinates to convert to Cartesian coordinates.
+                                              required:
+                                                - type
+                                                - expression
+                                              additionalProperties: false
+                                          description: A task that defines what the student is expected to do.
+                                    required:
+                                      - task
+                                    additionalProperties: false
+                                solutionPart:
+                                  type: object
+                                  properties:
+                                    task:
+                                      oneOf:
+                                        - type: object
+                                          properties:
+                                            type:
+                                              type: string
+                                              const: SIMPLIFY
+                                              description: Indicates the task is to simplify the given mathematical expression using mathematical and algebraic rules.
+                                            expression:
+                                              type: string
+                                              description: The LaTeX string representing the mathematical expression to simplify.
+                                          required:
+                                            - type
+                                            - expression
+                                          additionalProperties: false
+                                        - type: object
+                                          properties:
+                                            type:
+                                              type: string
+                                              const: SOLVE
+                                              description: Indicates the task is to solve the given equation or inequality for a specific variable.
+                                            expression:
+                                              type: string
+                                              description: The LaTeX string representing the equation or inequality to solve. For example, "x^2-4=0" or "2x+3>5".
+                                            variable:
+                                              type: string
+                                              description: The variable to solve for, e.g. 'x'
+                                            domain:
+                                              description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                              type: string
+                                          required:
+                                            - type
+                                            - expression
+                                            - variable
+                                          additionalProperties: false
+                                        - type: object
+                                          properties:
+                                            type:
+                                              type: string
+                                              const: SOLVE_SYSTEM
+                                              description: Indicates the task is to solve a system of equations or inequalities for specific variables.
+                                            variables:
+                                              type: array
+                                              items:
+                                                type: string
+                                              description: The variables to solve for, e.g. ['x', 'y']
+                                            expression:
+                                              type: string
+                                              description: 'The LaTeX string representing the system of equations or inequalities in LaTeX. Write the system as a LaTeX set. For example: "{x+y=1, x-y=2}".'
+                                            domain:
+                                              description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                              type: string
+                                            restrictVariable:
+                                              description: The variable to solve for. If not given, all variables in the system will be solved for.
+                                              type: string
+                                            method:
+                                              description: The method to use for solving the system. If not given, the system will prefer the elimination method.
+                                              type: string
+                                              enum:
+                                                - Eliminate
+                                                - Substitute
+                                                - Equate
+                                          required:
+                                            - type
+                                            - variables
+                                            - expression
+                                          additionalProperties: false
+                                        - type: object
+                                          properties:
+                                            type:
+                                              type: string
+                                              const: EXPAND
+                                              description: Indicates the task is to expand the given mathematical expression, such as multiplying out brackets and applying exponentiation.
+                                            expression:
+                                              type: string
+                                              description: The LaTeX string representing the mathematical expression to expand.
+                                          required:
+                                            - type
+                                            - expression
+                                          additionalProperties: false
+                                        - type: object
+                                          properties:
+                                            type:
+                                              type: string
+                                              const: FACTOR
+                                              description: Indicates the task is to factor the given mathematical expression, such as taking out common factors and factorising quadratics.
+                                            expression:
+                                              type: string
+                                              description: The LaTeX string representing the mathematical expression to factor.
+                                          required:
+                                            - type
+                                            - expression
+                                          additionalProperties: false
+                                        - type: object
+                                          properties:
+                                            type:
+                                              type: string
+                                              const: TOGETHER
+                                              description: Indicates the task is to combine a sum of fractions into a single fraction.
+                                            expression:
+                                              type: string
+                                              description: The LaTeX string representing the sum of fractions to combine into a single fraction.
+                                          required:
+                                            - type
+                                            - expression
+                                          additionalProperties: false
+                                        - type: object
+                                          properties:
+                                            type:
+                                              type: string
+                                              const: COMPLETE_SQUARE
+                                              description: Indicates the task is to complete the square for a quadratic expression with respect to a specific variable.
+                                            variable:
+                                              type: string
+                                              description: The variable to complete the square for, e.g. 'x'
+                                            expression:
+                                              type: string
+                                              description: The LaTeX string representing the quadratic expression to complete the square for.
+                                          required:
+                                            - type
+                                            - variable
+                                            - expression
+                                          additionalProperties: false
+                                        - type: object
+                                          properties:
+                                            type:
+                                              type: string
+                                              const: POLYNOMIAL_STANDARD_FORM
+                                              description: Indicates the task is to convert a polynomial expression to its standard form. This involves expanding the expression and then rearranging it in descending powers of the specified variable.
+                                            expression:
+                                              type: string
+                                              description: The LaTeX string representing the polynomial expression to convert to standard form.
+                                            variable:
+                                              type: string
+                                              description: The variable to convert to standard form, e.g. 'x'
+                                          required:
+                                            - type
+                                            - expression
+                                            - variable
+                                          additionalProperties: false
+                                        - type: object
+                                          properties:
+                                            type:
+                                              type: string
+                                              const: POWER_STANDARD_FORM
+                                              description: Indicates the task is to convert a power expression to its standard form. This involves rewriting radicals and fractions into exponent form.
+                                            expression:
+                                              type: string
+                                              description: The LaTeX string representing the power expression to convert to standard form.
+                                            variable:
+                                              type: string
+                                              description: The variable to convert to standard form, e.g. 'x'
+                                          required:
+                                            - type
+                                            - expression
+                                            - variable
+                                          additionalProperties: false
+                                        - type: object
+                                          properties:
+                                            type:
+                                              type: string
+                                              const: EXPONENTIAL_STANDARD_FORM
+                                              description: Indicates the task is to convert an exponential expression to its standard form $b\cdot g^x$.
+                                            variable:
+                                              type: string
+                                              description: The variable to convert to standard form, e.g. 'x'
+                                            expression:
+                                              type: string
+                                              description: The LaTeX string representing the exponential expression to convert to standard form.
+                                          required:
+                                            - type
+                                            - variable
+                                            - expression
+                                          additionalProperties: false
+                                        - type: object
+                                          properties:
+                                            type:
+                                              type: string
+                                              const: CARTESIAN_TO_POLAR_FORM
+                                              description: Indicates the task is to convert Cartesian coordinates to polar coordinates.
+                                            expression:
+                                              type: string
+                                              description: The LaTeX string representing the Cartesian coordinates to convert to polar coordinates.
+                                          required:
+                                            - type
+                                            - expression
+                                          additionalProperties: false
+                                        - type: object
+                                          properties:
+                                            type:
+                                              type: string
+                                              const: POLAR_TO_CARTESIAN_FORM
+                                              description: Indicates the task is to convert polar coordinates to Cartesian coordinates.
+                                            expression:
+                                              type: string
+                                              description: The LaTeX string representing the polar coordinates to convert to Cartesian coordinates.
+                                          required:
+                                            - type
+                                            - expression
+                                          additionalProperties: false
+                                      description: The task that the student needs to perform for this expression part. This defines what the student is expected to do with the given expression, such as simplifying it, factoring it, or converting it to a different form.
+                                    unit:
+                                      description: An optional unit associated with the expression
+                                      type: string
+                                    accuracy:
+                                      description: An optional accuracy specification that defines how to evaluate the student's answer for this expression part. If not provided, a default evaluation method will be used.
+                                      type: object
+                                      properties:
+                                        type:
+                                          type: string
+                                          enum:
+                                            - ROUND
+                                            - ROUND_UP
+                                            - ROUND_DOWN
+                                            - ACCURATE
+                                            - PRECISION
+                                          description: The type of accuracy to be applied
+                                        nr:
+                                          type: number
+                                          description: The numerical value associated with the accuracy
+                                      required:
+                                        - type
+                                        - nr
+                                      additionalProperties: false
+                                    symbol:
+                                      description: An optional variable or function that represents this part. E.g. "E" if this part represents energy, or "f(x)" if it represents a function definition.
+                                      type: string
+                                    description:
+                                      description: An description of what this part represents. E.g "the total discount"
+                                      type: string
+                                    alternativeTasks:
+                                      description: An optional array of alternative tasks that are also accepted as correct answers for this part.
+                                      type: array
+                                      items:
+                                        oneOf:
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: SIMPLIFY
+                                                description: Indicates the task is to simplify the given mathematical expression using mathematical and algebraic rules.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the mathematical expression to simplify.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: SOLVE
+                                                description: Indicates the task is to solve the given equation or inequality for a specific variable.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the equation or inequality to solve. For example, "x^2-4=0" or "2x+3>5".
+                                              variable:
+                                                type: string
+                                                description: The variable to solve for, e.g. 'x'
+                                              domain:
+                                                description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                                type: string
+                                            required:
+                                              - type
+                                              - expression
+                                              - variable
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: SOLVE_SYSTEM
+                                                description: Indicates the task is to solve a system of equations or inequalities for specific variables.
+                                              variables:
+                                                type: array
+                                                items:
+                                                  type: string
+                                                description: The variables to solve for, e.g. ['x', 'y']
+                                              expression:
+                                                type: string
+                                                description: 'The LaTeX string representing the system of equations or inequalities in LaTeX. Write the system as a LaTeX set. For example: "{x+y=1, x-y=2}".'
+                                              domain:
+                                                description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                                type: string
+                                              restrictVariable:
+                                                description: The variable to solve for. If not given, all variables in the system will be solved for.
+                                                type: string
+                                              method:
+                                                description: The method to use for solving the system. If not given, the system will prefer the elimination method.
+                                                type: string
+                                                enum:
+                                                  - Eliminate
+                                                  - Substitute
+                                                  - Equate
+                                            required:
+                                              - type
+                                              - variables
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: EXPAND
+                                                description: Indicates the task is to expand the given mathematical expression, such as multiplying out brackets and applying exponentiation.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the mathematical expression to expand.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: FACTOR
+                                                description: Indicates the task is to factor the given mathematical expression, such as taking out common factors and factorising quadratics.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the mathematical expression to factor.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: TOGETHER
+                                                description: Indicates the task is to combine a sum of fractions into a single fraction.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the sum of fractions to combine into a single fraction.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: COMPLETE_SQUARE
+                                                description: Indicates the task is to complete the square for a quadratic expression with respect to a specific variable.
+                                              variable:
+                                                type: string
+                                                description: The variable to complete the square for, e.g. 'x'
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the quadratic expression to complete the square for.
+                                            required:
+                                              - type
+                                              - variable
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: POLYNOMIAL_STANDARD_FORM
+                                                description: Indicates the task is to convert a polynomial expression to its standard form. This involves expanding the expression and then rearranging it in descending powers of the specified variable.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the polynomial expression to convert to standard form.
+                                              variable:
+                                                type: string
+                                                description: The variable to convert to standard form, e.g. 'x'
+                                            required:
+                                              - type
+                                              - expression
+                                              - variable
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: POWER_STANDARD_FORM
+                                                description: Indicates the task is to convert a power expression to its standard form. This involves rewriting radicals and fractions into exponent form.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the power expression to convert to standard form.
+                                              variable:
+                                                type: string
+                                                description: The variable to convert to standard form, e.g. 'x'
+                                            required:
+                                              - type
+                                              - expression
+                                              - variable
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: EXPONENTIAL_STANDARD_FORM
+                                                description: Indicates the task is to convert an exponential expression to its standard form $b\cdot g^x$.
+                                              variable:
+                                                type: string
+                                                description: The variable to convert to standard form, e.g. 'x'
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the exponential expression to convert to standard form.
+                                            required:
+                                              - type
+                                              - variable
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: CARTESIAN_TO_POLAR_FORM
+                                                description: Indicates the task is to convert Cartesian coordinates to polar coordinates.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the Cartesian coordinates to convert to polar coordinates.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                          - type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                const: POLAR_TO_CARTESIAN_FORM
+                                                description: Indicates the task is to convert polar coordinates to Cartesian coordinates.
+                                              expression:
+                                                type: string
+                                                description: The LaTeX string representing the polar coordinates to convert to Cartesian coordinates.
+                                            required:
+                                              - type
+                                              - expression
+                                            additionalProperties: false
+                                        description: A task that defines what the student is expected to do.
+                                  required:
+                                    - task
+                                  additionalProperties: false
+                                  description: Mandatory calculation that must be completed to solve the problem
+                              required:
+                                - type
+                                - solutionPart
+                              additionalProperties: false
+                            - type: object
+                              properties:
+                                type:
+                                  type: string
+                                  const: MATH_TABLE
+                                  description: The question type of this interaction, which is "MATH_TABLE" for math table questions.
+                                refId:
+                                  description: An optional reference ID for this interaction. If not provided, a pseudo ID will be generated.
+                                  type: string
+                                instruction:
+                                  description: The instruction or question prompt for this interaction
+                                  type: string
+                                scored:
+                                  description: Whether this interaction should be scored or not. Defaults to true.
+                                  type: boolean
+                                hints:
+                                  description: An optional list of general hints for this interaction. These are hints to get the student started and will be shown before any successful attempt is made.
+                                  type: array
+                                  items:
+                                    type: string
+                              required:
+                                - type
+                              additionalProperties: false
+                            - type: object
+                              properties:
+                                type:
+                                  type: string
+                                  enum:
+                                    - ALGEBRA
+                                    - ARITHMETIC
+                                    - CALCBOOK
+                                    - CHOICE
+                                    - FILL_IN_THE_BLANKS
+                                    - GEOMETRY
+                                    - MATH_ENTRY
+                                    - MATH_TABLE
+                                    - MODEL_METHOD
+                                    - MODEL_METHOD_FREEFORM
+                                    - MULTISTEP
+                                    - NUMBER_LINE
+                                    - OPEN_ANSWER
+                                    - STATISTICS
+                                    - TABLE
+                                    - WIDGET_FACTORY
+                                    - WORDPROBLEM
+                                  description: The question type of this interaction
+                                refId:
+                                  description: An optional reference ID for this interaction. If not provided, a pseudo ID will be generated.
+                                  type: string
+                                instruction:
+                                  description: The instruction or question prompt for this interaction
+                                  type: string
+                                scored:
+                                  description: Whether this interaction should be scored or not. Defaults to true.
+                                  type: boolean
+                                hints:
+                                  description: An optional list of general hints for this interaction. These are hints to get the student started and will be shown before any successful attempt is made.
+                                  type: array
+                                  items:
+                                    type: string
+                              required:
+                                - type
+                              additionalProperties: false
+                          description: 'The specification of the interaction in this block. Can be one of several interaction types: Choice (multiple choice), FITB (fill in the blanks), Multistep (algebraic multi-step), Table, or other interaction types.'
+                      required:
+                        - type
+                        - interaction
+                      additionalProperties: false
+                description: The blocks that make up the content of this element, stacked vertically. Each block can be either a content block or an interaction block.
+            required:
+              - blocks
+            additionalProperties: false
+          description: List of elements that make up the exercise. Elements with interactions will show as question blocks with labels a, b, c, etc.
+        questionMode:
+          type: string
+          enum:
+            - ONE_BY_ONE
+            - ALL_AT_ONCE
+          description: Whether to show one question at a time or all questions at once.
+        script:
+          description: An optional script (in Algebrakit syntax) for generating randomised instances of this exercise.
+          type: string
+        version:
+          type: number
+          description: The version of the exercise specification. The version used in this documentation is 1
+      required:
+        - type
+        - studentProfile
+        - symbols
+        - elements
+        - questionMode
+        - version
+      additionalProperties: false
+      description: A complete exercise specification for the Algebrakit system. For the full specification, see https://docs.algebrakit.com/pages/315-exercise-specification/
     CreateSessionRequest:
       type: object
       required:
@@ -256,8 +2152,12 @@ components:
                   - exerciseSpec
                 properties:
                   exerciseSpec:
-                    type: object
-                    description: JSON specification of the exercise. You can create such a specification with the Algebrakit's Authoring Components, see https://docs.prod.algebrakit.com/api/authoring-component/
+                    oneOf:
+                      - $ref: '#/components/schemas/IAK_Exercise'
+                      - type: object
+                        description: Exercise Specification generated with the Algebrakit Authoring Components. See https://docs.prod.algebrakit.com/pages/500-authoring/ for more information.
+                    description: |
+                      JSON specification of the exercise. You can provide an exercise in the AK_Exercise format or use the Algebrakit's Authoring Components to create a specification, see https://docs.prod.algebrakit.com/pages/500-authoring/. For the full IAK_Exercise specification, see [Exercise Specification](https://docs.algebrakit.com/pages/315-exercise-specification/).
               - type: object
                 required:
                   - sessionId
@@ -270,7 +2170,7 @@ components:
                     description: Number of sessions to create. If not specified, the number of exercises in the session will be used.
         scoringModel:
           type: string
-          description: Optional reference to a predefined scoring model. See (here)(https://docs.prod.algebrakit.com/api/scoring/) for more information.
+          description: Optional reference to a predefined scoring model. See [here](https://docs.algebrakit.com/pages/220-learning-data/#scoring) for more information.
         assessmentMode:
           type: boolean
           description: Assessment mode turns off the step-by-step evaluation, hints, and feedback for the student.
@@ -497,10 +2397,18 @@ components:
     AnnotationType:
       type: string
       enum:
-        - INPUT_EXPRESSION
+        - HINT
         - ERROR_FEEDBACK
+        - INPUT_EXPRESSION
         - SELECTED_OPTIONS
-        - INPUT_CONTENT
+        - INPUT
+      description: |
+        Type of annotation in the session info response:
+        - HINT: Hint provided to help the student
+        - ERROR_FEEDBACK: Feedback about an error in the student's input
+        - INPUT: Complete view of the question with student inputs at the time of the event (used in /session/info only)
+        - INPUT_EXPRESSION: Expression entered by the student (used in /session/score only)
+        - SELECTED_OPTIONS: Options selected by the student (used in /session/score only)
     RichContent:
       type: object
       required:
@@ -763,15 +2671,29 @@ components:
       properties:
         type:
           $ref: '#/components/schemas/AnnotationType'
-        expr:
+        expression:
           type: string
-          description: Optional mathematical expression in latex syntax associated with the annotation
-        main:
+          description: |
+            Mathematical expression in LaTeX format. 
+            For inline math inputs, uses \boxed{\color{blue} ...} to highlight input fields.
+            Replaces the former 'expr' field.
+        content:
           type: string
-          description: Optional primary description line
-        sub:
-          type: string
-          description: Optional secondary description line
+          description: |
+            Annotation content in HTML format. This field combines the former 'main', 'sub', and 'text' fields.
+            For INPUT type annotations, contains the complete question view with student inputs encoded as:
+            - <math-field> tags for mathematical input fields
+            - <choice-field label="X"> tags for multiple choice options
+            - \boxed{\color{blue} ...} for inline math expression inputs
+        gapIndex:
+          type: integer
+          description: Index of the gap in a Fill in the Blanks question, starting from 1
+        row:
+          type: integer
+          description: Row index in a Math Table question, starting from 1
+        col:
+          type: integer
+          description: Column index in a Math Table question, starting from 1
     EventResultInfo:
       type: object
       required:
@@ -886,6 +2808,7 @@ components:
                 - TEXT
             content:
               type: string
+              description: The content, which can include HTML tags for tables, lists, and other formatting. Mathematical expressions are encoded in latex and wrapped in $ ... $.
     ElementItemInfo:
       type: object
       required:
@@ -909,7 +2832,9 @@ components:
             - QUESTION
           description: The type of the element. INSTRUCTION elements have no scorable interactions. QUESTION elements contain one or more scorable interactions.
         items:
-          $ref: '#/components/schemas/ElementItemInfo'
+          type: array
+          items:
+            $ref: '#/components/schemas/ElementItemInfo'
     SessionInfoResponse:
       type: object
       required:
@@ -943,8 +2868,12 @@ components:
             - exerciseSpec
           properties:
             exerciseSpec:
-              type: object
-              description: An exercise specification as obtained from the exercise authoring tool
+              oneOf:
+                - $ref: '#/components/schemas/IAK_Exercise'
+                - type: object
+                  description: Legacy exercise specification format (internal format)
+              description: |
+                An exercise specification in the AK_Exercise format (recommended) or as obtained from the exercise authoring tool. For the full IAK_Exercise specification, see [Exercise Specification](https://docs.algebrakit.com/pages/315-exercise-specification/).
     ExerciseValidateResponse:
       type: object
       required:
@@ -1296,87 +3225,14 @@ components:
                             - SkippingTerms
                           source: ERROR_FEEDBACK
                       annotations:
-                        - type: INPUT_EXPRESSION
-                          expr: $6p-1=4p+10$
+                        - type: INPUT
+                          content: $6p-1=4p+10$
                         - type: ERROR_FEEDBACK
-                          main: You did not compute the multiplication correctly.
-                          sub: You did not multiply all terms of  $p - 1$  by  $6$ .
-                          expr: $$6 p - \begingroup\color{darkred}\begingroup 1\endgroup\endgroup=4 p + 10$$
+                          content: <h1>You did not expand the parentheses correctly.</h1>You did not multiply all terms of  $p - 1$  by  $6$ .
+                          expression: $6 p - \begingroup\color{darkred}\begingroup 1\endgroup\endgroup=4 p + 10$
                       exerciseStatus: ERROR
                       progress: 0
                       inputStatus: ERROR
-                    - timestamp: 1752395846387
-                      event: EVALUATE
-                      tags:
-                        - id: EquationsBalanceMethodArrangeTerms
-                          source: NEXT_STEP
-                        - id: EquationsOperationsAdd
-                          source: NEXT_STEP
-                      annotations:
-                        - type: INPUT_EXPRESSION
-                          expr: $6p-6=4p+10$
-                      exerciseStatus: CORRECT
-                      progress: 0
-                      inputStatus: CORRECT
-                      skillsTodo:
-                        - EquationsBalanceMethodArrangeTerms
-                        - EquationsOperationsAdd
-                        - AlgebraAddingLikeTerms
-                        - EquationsBalanceMethodDivideCoefficient
-                        - EquationsOperationsMultiply
-                    - timestamp: 1752395850393
-                      event: HINT
-                      tags:
-                        - id: EquationsBalanceMethodArrangeTerms
-                          source: HINT
-                        - id: EquationsOperationsAdd
-                          source: HINT
-                      annotations:
-                        - type: HINT
-                          main: 'Balance method: subtract  $4 p $  from both sides'
-                          expr: $$\begingroup\color{#336699}\begingroup 6 p \endgroup\endgroup- 6=\begingroup\color{#336699}\begingroup 4 p \endgroup\endgroup+ 10$$
-                    - timestamp: 1752395852101
-                      event: EVALUATE
-                      tags:
-                        - id: EquationsBalanceMethodDivideCoefficient
-                          source: NEXT_STEP
-                        - id: EquationsOperationsMultiply
-                          source: NEXT_STEP
-                      annotations:
-                        - type: INPUT_EXPRESSION
-                          expr: $2p=16$
-                      exerciseStatus: CORRECT
-                      progress: 0
-                      inputStatus: CORRECT
-                      skillsTodo:
-                        - EquationsBalanceMethodDivideCoefficient
-                        - EquationsOperationsMultiply
-                    - timestamp: 1752395854898
-                      event: EVALUATE
-                      tags: []
-                      annotations:
-                        - type: INPUT_EXPRESSION
-                          expr: $p=\frac{16}{2}$
-                      exerciseStatus: CORRECT
-                      progress: 0.5
-                      inputStatus: CORRECT
-                    - timestamp: 1752395865482
-                      event: HINT
-                      tags: []
-                      annotations:
-                        - type: HINT
-                          main: 'Calculate:  $\frac{16}{2}$'
-                          expr: $$p =\begingroup\color{#336699}\begingroup \frac{16}{2}\endgroup\endgroup$$
-                  tags:
-                    - id: ExpandSingleBrackets
-                      weight: 100
-                      errors:
-                        - SkippingTerms
-                      source: ERROR_FEEDBACK
-                    - id: EquationsBalanceMethodArrangeTerms
-                      source: HINT
-                    - id: EquationsOperationsAdd
-                      source: HINT
                   scoring:
                     marksEarned: 0
                     marksTotal: 1
