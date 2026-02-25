@@ -236,6 +236,7 @@ components:
           type: string
           description: ID of the student profile, which defines school level, language, etc.
         symbols:
+          description: List of mathematical symbols (variables, units, functions, etc.) used in the exercise
           type: array
           items:
             type: object
@@ -266,7 +267,6 @@ components:
               - name
               - type
             additionalProperties: false
-          description: List of mathematical symbols (variables, units, functions, etc.) used in the exercise
         elements:
           type: array
           items:
@@ -275,7 +275,7 @@ components:
               blocks:
                 type: array
                 items:
-                  anyOf:
+                  oneOf:
                     - type: object
                       properties:
                         type:
@@ -294,7 +294,7 @@ components:
                           type: string
                           const: INTERACTION
                         interaction:
-                          anyOf:
+                          oneOf:
                             - type: object
                               properties:
                                 type:
@@ -600,7 +600,20 @@ components:
                                                 description: The task that the student needs to perform for this expression part. This defines what the student is expected to do with the given expression, such as simplifying it, factoring it, or converting it to a different form.
                                               unit:
                                                 description: An optional unit associated with the expression
-                                                type: string
+                                                type: object
+                                                properties:
+                                                  unit:
+                                                    type: string
+                                                    description: The specific unit that the student's answer should be in. This can be a standard unit like "\frac{m}{s}" or "kg", or a more complex unit expression.
+                                                  allowEquivalentUnits:
+                                                    description: Whether to allow equivalent units (e.g., "\frac{m}{s}" and "\frac{km}{h}" could be considered equivalent if allowEquivalentUnits is true). If false or not provided, only the specified unit will be accepted.
+                                                    type: boolean
+                                                  override:
+                                                    description: Whether to override the unit inferred from the task. If true, the specified unit will be used for evaluation regardless of any units mentioned in the task.
+                                                    type: boolean
+                                                required:
+                                                  - unit
+                                                additionalProperties: false
                                               accuracy:
                                                 description: An optional accuracy specification that defines how to evaluate the student's answer for this expression part. If not provided, a default evaluation method will be used.
                                                 type: object
@@ -613,13 +626,39 @@ components:
                                                       - ROUND_DOWN
                                                       - ACCURATE
                                                       - PRECISION
-                                                    description: The type of accuracy to be applied
+                                                    description: The type of accuracy to be applied. 'ROUND' means standard rounding to a specified number of decimal places. 'ROUND_UP' means rounding up (ceiling) to a specified number of decimal places. 'ROUND_DOWN' means rounding down (floor) to a specified number of decimal places. 'ACCURATE' means that the answer must be accurate with AT LEAST the specified number of decimal places. 'PRECISION' means that the student's answer must have a specified number of significant digits, regardless of the number of decimal places.
                                                   nr:
                                                     type: number
                                                     description: The numerical value associated with the accuracy
+                                                  keepDecimalZeros:
+                                                    description: Whether to keep trailing zeros in decimal answers. Applies when type is 'ROUND', 'ACCURATE', 'ROUND_UP', or 'ROUND_DOWN'. If true, answers will be formatted to have exactly 'nr' decimal places, even if that means adding trailing zeros. If false or not provided, trailing zeros will be omitted.
+                                                    type: boolean
                                                 required:
                                                   - type
                                                   - nr
+                                                additionalProperties: false
+                                              form:
+                                                description: An optional specification of the expected form of the student's answer for this expression part.
+                                                type: object
+                                                properties:
+                                                  numbers:
+                                                    type: string
+                                                    enum:
+                                                      - DECIMAL_REQUIRED
+                                                      - DECIMAL_PREFERRED
+                                                      - FRACTION_REQUIRED
+                                                      - FRACTION_PREFERRED
+                                                      - SCIENTIFIC_NOTATION_REQUIRED
+                                                      - SCIENTIFIC_NOTATION_PREFERRED
+                                                  radicals:
+                                                    type: string
+                                                    enum:
+                                                      - STANDARD_FORM_REQUIRED
+                                                  fractions:
+                                                    type: string
+                                                    enum:
+                                                      - MIXED_FRACTION_REQUIRED
+                                                      - IMPROPER_FRACTION_REQUIRED
                                                 additionalProperties: false
                                             required:
                                               - task
@@ -904,7 +943,20 @@ components:
                                         description: The task that the student needs to perform for this expression part. This defines what the student is expected to do with the given expression, such as simplifying it, factoring it, or converting it to a different form.
                                       unit:
                                         description: An optional unit associated with the expression
-                                        type: string
+                                        type: object
+                                        properties:
+                                          unit:
+                                            type: string
+                                            description: The specific unit that the student's answer should be in. This can be a standard unit like "\frac{m}{s}" or "kg", or a more complex unit expression.
+                                          allowEquivalentUnits:
+                                            description: Whether to allow equivalent units (e.g., "\frac{m}{s}" and "\frac{km}{h}" could be considered equivalent if allowEquivalentUnits is true). If false or not provided, only the specified unit will be accepted.
+                                            type: boolean
+                                          override:
+                                            description: Whether to override the unit inferred from the task. If true, the specified unit will be used for evaluation regardless of any units mentioned in the task.
+                                            type: boolean
+                                        required:
+                                          - unit
+                                        additionalProperties: false
                                       accuracy:
                                         description: An optional accuracy specification that defines how to evaluate the student's answer for this expression part. If not provided, a default evaluation method will be used.
                                         type: object
@@ -917,13 +969,39 @@ components:
                                               - ROUND_DOWN
                                               - ACCURATE
                                               - PRECISION
-                                            description: The type of accuracy to be applied
+                                            description: The type of accuracy to be applied. 'ROUND' means standard rounding to a specified number of decimal places. 'ROUND_UP' means rounding up (ceiling) to a specified number of decimal places. 'ROUND_DOWN' means rounding down (floor) to a specified number of decimal places. 'ACCURATE' means that the answer must be accurate with AT LEAST the specified number of decimal places. 'PRECISION' means that the student's answer must have a specified number of significant digits, regardless of the number of decimal places.
                                           nr:
                                             type: number
                                             description: The numerical value associated with the accuracy
+                                          keepDecimalZeros:
+                                            description: Whether to keep trailing zeros in decimal answers. Applies when type is 'ROUND', 'ACCURATE', 'ROUND_UP', or 'ROUND_DOWN'. If true, answers will be formatted to have exactly 'nr' decimal places, even if that means adding trailing zeros. If false or not provided, trailing zeros will be omitted.
+                                            type: boolean
                                         required:
                                           - type
                                           - nr
+                                        additionalProperties: false
+                                      form:
+                                        description: An optional specification of the expected form of the student's answer for this expression part.
+                                        type: object
+                                        properties:
+                                          numbers:
+                                            type: string
+                                            enum:
+                                              - DECIMAL_REQUIRED
+                                              - DECIMAL_PREFERRED
+                                              - FRACTION_REQUIRED
+                                              - FRACTION_PREFERRED
+                                              - SCIENTIFIC_NOTATION_REQUIRED
+                                              - SCIENTIFIC_NOTATION_PREFERRED
+                                          radicals:
+                                            type: string
+                                            enum:
+                                              - STANDARD_FORM_REQUIRED
+                                          fractions:
+                                            type: string
+                                            enum:
+                                              - MIXED_FRACTION_REQUIRED
+                                              - IMPROPER_FRACTION_REQUIRED
                                         additionalProperties: false
                                       symbol:
                                         description: An optional variable or function that represents this part. E.g. "E" if this part represents energy, or "f(x)" if it represents a function definition.
@@ -1349,7 +1427,20 @@ components:
                                         description: The task that the student needs to perform for this expression part. This defines what the student is expected to do with the given expression, such as simplifying it, factoring it, or converting it to a different form.
                                       unit:
                                         description: An optional unit associated with the expression
-                                        type: string
+                                        type: object
+                                        properties:
+                                          unit:
+                                            type: string
+                                            description: The specific unit that the student's answer should be in. This can be a standard unit like "\frac{m}{s}" or "kg", or a more complex unit expression.
+                                          allowEquivalentUnits:
+                                            description: Whether to allow equivalent units (e.g., "\frac{m}{s}" and "\frac{km}{h}" could be considered equivalent if allowEquivalentUnits is true). If false or not provided, only the specified unit will be accepted.
+                                            type: boolean
+                                          override:
+                                            description: Whether to override the unit inferred from the task. If true, the specified unit will be used for evaluation regardless of any units mentioned in the task.
+                                            type: boolean
+                                        required:
+                                          - unit
+                                        additionalProperties: false
                                       accuracy:
                                         description: An optional accuracy specification that defines how to evaluate the student's answer for this expression part. If not provided, a default evaluation method will be used.
                                         type: object
@@ -1362,13 +1453,39 @@ components:
                                               - ROUND_DOWN
                                               - ACCURATE
                                               - PRECISION
-                                            description: The type of accuracy to be applied
+                                            description: The type of accuracy to be applied. 'ROUND' means standard rounding to a specified number of decimal places. 'ROUND_UP' means rounding up (ceiling) to a specified number of decimal places. 'ROUND_DOWN' means rounding down (floor) to a specified number of decimal places. 'ACCURATE' means that the answer must be accurate with AT LEAST the specified number of decimal places. 'PRECISION' means that the student's answer must have a specified number of significant digits, regardless of the number of decimal places.
                                           nr:
                                             type: number
                                             description: The numerical value associated with the accuracy
+                                          keepDecimalZeros:
+                                            description: Whether to keep trailing zeros in decimal answers. Applies when type is 'ROUND', 'ACCURATE', 'ROUND_UP', or 'ROUND_DOWN'. If true, answers will be formatted to have exactly 'nr' decimal places, even if that means adding trailing zeros. If false or not provided, trailing zeros will be omitted.
+                                            type: boolean
                                         required:
                                           - type
                                           - nr
+                                        additionalProperties: false
+                                      form:
+                                        description: An optional specification of the expected form of the student's answer for this expression part.
+                                        type: object
+                                        properties:
+                                          numbers:
+                                            type: string
+                                            enum:
+                                              - DECIMAL_REQUIRED
+                                              - DECIMAL_PREFERRED
+                                              - FRACTION_REQUIRED
+                                              - FRACTION_PREFERRED
+                                              - SCIENTIFIC_NOTATION_REQUIRED
+                                              - SCIENTIFIC_NOTATION_PREFERRED
+                                          radicals:
+                                            type: string
+                                            enum:
+                                              - STANDARD_FORM_REQUIRED
+                                          fractions:
+                                            type: string
+                                            enum:
+                                              - MIXED_FRACTION_REQUIRED
+                                              - IMPROPER_FRACTION_REQUIRED
                                         additionalProperties: false
                                       symbol:
                                         description: An optional variable or function that represents this part. E.g. "E" if this part represents energy, or "f(x)" if it represents a function definition.
@@ -1789,7 +1906,20 @@ components:
                                       description: The task that the student needs to perform for this expression part. This defines what the student is expected to do with the given expression, such as simplifying it, factoring it, or converting it to a different form.
                                     unit:
                                       description: An optional unit associated with the expression
-                                      type: string
+                                      type: object
+                                      properties:
+                                        unit:
+                                          type: string
+                                          description: The specific unit that the student's answer should be in. This can be a standard unit like "\frac{m}{s}" or "kg", or a more complex unit expression.
+                                        allowEquivalentUnits:
+                                          description: Whether to allow equivalent units (e.g., "\frac{m}{s}" and "\frac{km}{h}" could be considered equivalent if allowEquivalentUnits is true). If false or not provided, only the specified unit will be accepted.
+                                          type: boolean
+                                        override:
+                                          description: Whether to override the unit inferred from the task. If true, the specified unit will be used for evaluation regardless of any units mentioned in the task.
+                                          type: boolean
+                                      required:
+                                        - unit
+                                      additionalProperties: false
                                     accuracy:
                                       description: An optional accuracy specification that defines how to evaluate the student's answer for this expression part. If not provided, a default evaluation method will be used.
                                       type: object
@@ -1802,13 +1932,39 @@ components:
                                             - ROUND_DOWN
                                             - ACCURATE
                                             - PRECISION
-                                          description: The type of accuracy to be applied
+                                          description: The type of accuracy to be applied. 'ROUND' means standard rounding to a specified number of decimal places. 'ROUND_UP' means rounding up (ceiling) to a specified number of decimal places. 'ROUND_DOWN' means rounding down (floor) to a specified number of decimal places. 'ACCURATE' means that the answer must be accurate with AT LEAST the specified number of decimal places. 'PRECISION' means that the student's answer must have a specified number of significant digits, regardless of the number of decimal places.
                                         nr:
                                           type: number
                                           description: The numerical value associated with the accuracy
+                                        keepDecimalZeros:
+                                          description: Whether to keep trailing zeros in decimal answers. Applies when type is 'ROUND', 'ACCURATE', 'ROUND_UP', or 'ROUND_DOWN'. If true, answers will be formatted to have exactly 'nr' decimal places, even if that means adding trailing zeros. If false or not provided, trailing zeros will be omitted.
+                                          type: boolean
                                       required:
                                         - type
                                         - nr
+                                      additionalProperties: false
+                                    form:
+                                      description: An optional specification of the expected form of the student's answer for this expression part.
+                                      type: object
+                                      properties:
+                                        numbers:
+                                          type: string
+                                          enum:
+                                            - DECIMAL_REQUIRED
+                                            - DECIMAL_PREFERRED
+                                            - FRACTION_REQUIRED
+                                            - FRACTION_PREFERRED
+                                            - SCIENTIFIC_NOTATION_REQUIRED
+                                            - SCIENTIFIC_NOTATION_PREFERRED
+                                        radicals:
+                                          type: string
+                                          enum:
+                                            - STANDARD_FORM_REQUIRED
+                                        fractions:
+                                          type: string
+                                          enum:
+                                            - MIXED_FRACTION_REQUIRED
+                                            - IMPROPER_FRACTION_REQUIRED
                                       additionalProperties: false
                                     symbol:
                                       description: An optional variable or function that represents this part. E.g. "E" if this part represents energy, or "f(x)" if it represents a function definition.
@@ -2024,6 +2180,16 @@ components:
                                     - task
                                   additionalProperties: false
                                   description: Mandatory calculation that must be completed to solve the problem
+                                initialExpressionType:
+                                  description: Specifies whether an initial expression must be shown. E.g., the equation to solve. Set to 'AUTOMATIC' to use the expression from the solution task. Set to 'NONE' if you don't whant to give away this expression to the student. Set to 'CUSTOM' if you want to provide a custom expression in the 'initialExpression' field. Default setting is 'AUTOMATIC' if no intermediate parts are defined, 'NONE' otherwise.
+                                  type: string
+                                  enum:
+                                    - NONE
+                                    - CUSTOM
+                                    - AUTOMATIC
+                                initialExpression:
+                                  description: The initial expression (in LaTeX) for the multi-step interaction, if initialExpressionType is 'CUSTOM'.
+                                  type: string
                               required:
                                 - type
                                 - solutionPart
@@ -2048,50 +2214,315 @@ components:
                                   type: array
                                   items:
                                     type: string
-                              required:
-                                - type
-                              additionalProperties: false
-                            - type: object
-                              properties:
-                                type:
-                                  type: string
-                                  enum:
-                                    - ALGEBRA
-                                    - ARITHMETIC
-                                    - CALCBOOK
-                                    - CHOICE
-                                    - FILL_IN_THE_BLANKS
-                                    - GEOMETRY
-                                    - MATH_ENTRY
-                                    - MATH_TABLE
-                                    - MODEL_METHOD
-                                    - MODEL_METHOD_FREEFORM
-                                    - MULTISTEP
-                                    - NUMBER_LINE
-                                    - OPEN_ANSWER
-                                    - STATISTICS
-                                    - TABLE
-                                    - WIDGET_FACTORY
-                                    - WORDPROBLEM
-                                  description: The question type of this interaction
-                                refId:
-                                  description: An optional reference ID for this interaction. If not provided, a pseudo ID will be generated.
-                                  type: string
-                                instruction:
-                                  description: The instruction or question prompt for this interaction
-                                  type: string
-                                scored:
-                                  description: Whether this interaction should be scored or not. Defaults to true.
-                                  type: boolean
-                                hints:
-                                  description: An optional list of general hints for this interaction. These are hints to get the student started and will be shown before any successful attempt is made.
+                                cells:
                                   type: array
                                   items:
-                                    type: string
+                                    type: object
+                                    properties:
+                                      type:
+                                        type: string
+                                        enum:
+                                          - text
+                                          - math
+                                          - input
+                                        description: The type of the cell, which can be 'text', 'math', or 'input'
+                                      row:
+                                        type: number
+                                        description: The row index of the cell in the table. Non-header rows start from 1. A header row has a row index of 0.
+                                      col:
+                                        type: number
+                                        description: The column index of the cell in the table. Non-header columns start from 1. A header column has a column index of 0.
+                                      isHeader:
+                                        type: boolean
+                                        description: Whether this cell is a header cell or not
+                                      content:
+                                        description: The text content of the cell, applicable for text cells
+                                        type: string
+                                      value:
+                                        description: The mathematical expression content of the cell, applicable for math cells
+                                        type: string
+                                      spec:
+                                        description: The specification of the input cell, which defines the expected answer format and validation rules, applicable for input cells
+                                        type: object
+                                        properties:
+                                          task:
+                                            oneOf:
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    const: SIMPLIFY
+                                                    description: Indicates the task is to simplify the given mathematical expression using mathematical and algebraic rules.
+                                                  expression:
+                                                    type: string
+                                                    description: The LaTeX string representing the mathematical expression to simplify.
+                                                required:
+                                                  - type
+                                                  - expression
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    const: SOLVE
+                                                    description: Indicates the task is to solve the given equation or inequality for a specific variable.
+                                                  expression:
+                                                    type: string
+                                                    description: The LaTeX string representing the equation or inequality to solve. For example, "x^2-4=0" or "2x+3>5".
+                                                  variable:
+                                                    type: string
+                                                    description: The variable to solve for, e.g. 'x'
+                                                  domain:
+                                                    description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                                    type: string
+                                                required:
+                                                  - type
+                                                  - expression
+                                                  - variable
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    const: SOLVE_SYSTEM
+                                                    description: Indicates the task is to solve a system of equations or inequalities for specific variables.
+                                                  variables:
+                                                    type: array
+                                                    items:
+                                                      type: string
+                                                    description: The variables to solve for, e.g. ['x', 'y']
+                                                  expression:
+                                                    type: string
+                                                    description: 'The LaTeX string representing the system of equations or inequalities in LaTeX. Write the system as a LaTeX set. For example: "{x+y=1, x-y=2}".'
+                                                  domain:
+                                                    description: Optional domain of the solution, written as an inequality, e.g. 'x\geq 0', '0<x<2\pi', etc.
+                                                    type: string
+                                                  restrictVariable:
+                                                    description: The variable to solve for. If not given, all variables in the system will be solved for.
+                                                    type: string
+                                                  method:
+                                                    description: The method to use for solving the system. If not given, the system will prefer the elimination method.
+                                                    type: string
+                                                    enum:
+                                                      - Eliminate
+                                                      - Substitute
+                                                      - Equate
+                                                required:
+                                                  - type
+                                                  - variables
+                                                  - expression
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    const: EXPAND
+                                                    description: Indicates the task is to expand the given mathematical expression, such as multiplying out brackets and applying exponentiation.
+                                                  expression:
+                                                    type: string
+                                                    description: The LaTeX string representing the mathematical expression to expand.
+                                                required:
+                                                  - type
+                                                  - expression
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    const: FACTOR
+                                                    description: Indicates the task is to factor the given mathematical expression, such as taking out common factors and factorising quadratics.
+                                                  expression:
+                                                    type: string
+                                                    description: The LaTeX string representing the mathematical expression to factor.
+                                                required:
+                                                  - type
+                                                  - expression
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    const: TOGETHER
+                                                    description: Indicates the task is to combine a sum of fractions into a single fraction.
+                                                  expression:
+                                                    type: string
+                                                    description: The LaTeX string representing the sum of fractions to combine into a single fraction.
+                                                required:
+                                                  - type
+                                                  - expression
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    const: COMPLETE_SQUARE
+                                                    description: Indicates the task is to complete the square for a quadratic expression with respect to a specific variable.
+                                                  variable:
+                                                    type: string
+                                                    description: The variable to complete the square for, e.g. 'x'
+                                                  expression:
+                                                    type: string
+                                                    description: The LaTeX string representing the quadratic expression to complete the square for.
+                                                required:
+                                                  - type
+                                                  - variable
+                                                  - expression
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    const: POLYNOMIAL_STANDARD_FORM
+                                                    description: Indicates the task is to convert a polynomial expression to its standard form. This involves expanding the expression and then rearranging it in descending powers of the specified variable.
+                                                  expression:
+                                                    type: string
+                                                    description: The LaTeX string representing the polynomial expression to convert to standard form.
+                                                  variable:
+                                                    type: string
+                                                    description: The variable to convert to standard form, e.g. 'x'
+                                                required:
+                                                  - type
+                                                  - expression
+                                                  - variable
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    const: POWER_STANDARD_FORM
+                                                    description: Indicates the task is to convert a power expression to its standard form. This involves rewriting radicals and fractions into exponent form.
+                                                  expression:
+                                                    type: string
+                                                    description: The LaTeX string representing the power expression to convert to standard form.
+                                                  variable:
+                                                    type: string
+                                                    description: The variable to convert to standard form, e.g. 'x'
+                                                required:
+                                                  - type
+                                                  - expression
+                                                  - variable
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    const: EXPONENTIAL_STANDARD_FORM
+                                                    description: Indicates the task is to convert an exponential expression to its standard form $b\cdot g^x$.
+                                                  variable:
+                                                    type: string
+                                                    description: The variable to convert to standard form, e.g. 'x'
+                                                  expression:
+                                                    type: string
+                                                    description: The LaTeX string representing the exponential expression to convert to standard form.
+                                                required:
+                                                  - type
+                                                  - variable
+                                                  - expression
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    const: CARTESIAN_TO_POLAR_FORM
+                                                    description: Indicates the task is to convert Cartesian coordinates to polar coordinates.
+                                                  expression:
+                                                    type: string
+                                                    description: The LaTeX string representing the Cartesian coordinates to convert to polar coordinates.
+                                                required:
+                                                  - type
+                                                  - expression
+                                                additionalProperties: false
+                                              - type: object
+                                                properties:
+                                                  type:
+                                                    type: string
+                                                    const: POLAR_TO_CARTESIAN_FORM
+                                                    description: Indicates the task is to convert polar coordinates to Cartesian coordinates.
+                                                  expression:
+                                                    type: string
+                                                    description: The LaTeX string representing the polar coordinates to convert to Cartesian coordinates.
+                                                required:
+                                                  - type
+                                                  - expression
+                                                additionalProperties: false
+                                            description: The task that the student needs to perform for this expression part. This defines what the student is expected to do with the given expression, such as simplifying it, factoring it, or converting it to a different form.
+                                          unit:
+                                            description: An optional unit associated with the expression
+                                            type: object
+                                            properties:
+                                              unit:
+                                                type: string
+                                                description: The specific unit that the student's answer should be in. This can be a standard unit like "\frac{m}{s}" or "kg", or a more complex unit expression.
+                                              allowEquivalentUnits:
+                                                description: Whether to allow equivalent units (e.g., "\frac{m}{s}" and "\frac{km}{h}" could be considered equivalent if allowEquivalentUnits is true). If false or not provided, only the specified unit will be accepted.
+                                                type: boolean
+                                              override:
+                                                description: Whether to override the unit inferred from the task. If true, the specified unit will be used for evaluation regardless of any units mentioned in the task.
+                                                type: boolean
+                                            required:
+                                              - unit
+                                            additionalProperties: false
+                                          accuracy:
+                                            description: An optional accuracy specification that defines how to evaluate the student's answer for this expression part. If not provided, a default evaluation method will be used.
+                                            type: object
+                                            properties:
+                                              type:
+                                                type: string
+                                                enum:
+                                                  - ROUND
+                                                  - ROUND_UP
+                                                  - ROUND_DOWN
+                                                  - ACCURATE
+                                                  - PRECISION
+                                                description: The type of accuracy to be applied. 'ROUND' means standard rounding to a specified number of decimal places. 'ROUND_UP' means rounding up (ceiling) to a specified number of decimal places. 'ROUND_DOWN' means rounding down (floor) to a specified number of decimal places. 'ACCURATE' means that the answer must be accurate with AT LEAST the specified number of decimal places. 'PRECISION' means that the student's answer must have a specified number of significant digits, regardless of the number of decimal places.
+                                              nr:
+                                                type: number
+                                                description: The numerical value associated with the accuracy
+                                              keepDecimalZeros:
+                                                description: Whether to keep trailing zeros in decimal answers. Applies when type is 'ROUND', 'ACCURATE', 'ROUND_UP', or 'ROUND_DOWN'. If true, answers will be formatted to have exactly 'nr' decimal places, even if that means adding trailing zeros. If false or not provided, trailing zeros will be omitted.
+                                                type: boolean
+                                            required:
+                                              - type
+                                              - nr
+                                            additionalProperties: false
+                                          form:
+                                            description: An optional specification of the expected form of the student's answer for this expression part.
+                                            type: object
+                                            properties:
+                                              numbers:
+                                                type: string
+                                                enum:
+                                                  - DECIMAL_REQUIRED
+                                                  - DECIMAL_PREFERRED
+                                                  - FRACTION_REQUIRED
+                                                  - FRACTION_PREFERRED
+                                                  - SCIENTIFIC_NOTATION_REQUIRED
+                                                  - SCIENTIFIC_NOTATION_PREFERRED
+                                              radicals:
+                                                type: string
+                                                enum:
+                                                  - STANDARD_FORM_REQUIRED
+                                              fractions:
+                                                type: string
+                                                enum:
+                                                  - MIXED_FRACTION_REQUIRED
+                                                  - IMPROPER_FRACTION_REQUIRED
+                                            additionalProperties: false
+                                        required:
+                                          - task
+                                        additionalProperties: false
+                                    required:
+                                      - type
+                                      - row
+                                      - col
+                                      - isHeader
+                                    additionalProperties: false
+                                  description: The cells that make up the table. Each cell has a type (text, math, or input), position (row, col), and content.
                               required:
                                 - type
+                                - cells
                               additionalProperties: false
-                          description: 'The specification of the interaction in this block. Can be one of several interaction types: Choice (multiple choice), FITB (fill in the blanks), Multistep (algebraic multi-step), Table, or other interaction types.'
+                          description: 'The specification of the interaction in this block. Can be one of several interaction types: Choice (multiple choice), FITB (fill in the blanks), Multistep (algebraic multi-step), or Table.'
                       required:
                         - type
                         - interaction
@@ -2116,7 +2547,6 @@ components:
       required:
         - type
         - studentProfile
-        - symbols
         - elements
         - questionMode
         - version
@@ -2177,6 +2607,21 @@ components:
         requireLockForSolution:
           type: boolean
           description: Prevents obtaining solutions before the session is locked.
+        studentFeedbackType:
+          type: string
+          enum:
+            - ALL
+            - ICONS_ONLY
+            - ERRORS_ONLY
+            - NONE
+          description: Controls the level of feedback a student receives on their answers. Default behavior when not specified is ALL.
+        options:
+          type: object
+          properties:
+            generateDebugInfo:
+              type: boolean
+              description: Whether to include debug information about the item in the response. Will also allow Algebrakit to infer symbol types if these are not defined.
+          description: Optional configuration.
         apiVersion:
           type: integer
           description: API version to use for the request. Always set to 2.
@@ -2193,6 +2638,9 @@ components:
         - NUMBER_LINE
         - ARITHMETIC
         - CHOICE
+        - OPEN_ANSWER
+        - MODEL_METHOD
+        - MODEL_METHOD_FREEFORM
       description: The question type of an interaction.
     InteractionDescription:
       type: object
