@@ -1,16 +1,29 @@
 // Request types for the Algebrakit Webservice API
 
+import { IAK_Exercise } from '../exercise/AK_ExerciseTypes';
+
+export type AK_StudentFeedbackType = 'ALL' | 'ICONS_ONLY' | 'ERRORS_ONLY' | 'NONE';
+
+export interface CreateSessionOptions {
+  validate?: boolean;
+  productionMode?: boolean;
+  generateDebugInfo?: boolean;
+}
+
 export interface CreateSessionRequest {
   exercises: Array<{
     exerciseId?: string;
     version?: string;
-    exerciseSpec?: Record<string, any>;
+    exerciseSpec?: IAK_Exercise | Record<string, unknown>;
     sessionId?: string;
+    nr?: number;
   }>;
+  options?: CreateSessionOptions;
   scoringModel?: string;
   assessmentMode?: boolean;
   requireLockForSolution?: boolean;
-  apiVersion: number;
+  studentFeedbackType?: AK_StudentFeedbackType;
+  apiVersion: 2;
 }
 
 export interface SessionScoreRequest {
@@ -34,7 +47,7 @@ export interface SessionRetrieveRequest {
 export interface ExerciseValidateRequest {
   exerciseId?: string;
   version?: string | number;
-  exerciseSpec?: Record<string, unknown>;
+  exerciseSpec?: IAK_Exercise | Record<string, unknown>;
 }
 
 export interface ExerciseInfoRequest {

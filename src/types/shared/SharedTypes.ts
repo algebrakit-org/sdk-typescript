@@ -8,7 +8,10 @@ export type InteractionType =
   | 'STATISTICS'
   | 'NUMBER_LINE'
   | 'ARITHMETIC'
-  | 'CHOICE';
+  | 'CHOICE'
+  | 'OPEN_ANSWER'
+  | 'MODEL_METHOD'
+  | 'MODEL_METHOD_FREEFORM';
 
 export type ExerciseStatus =
   | 'FINISHED'
@@ -151,6 +154,20 @@ export interface InteractionDescription {
   scorable?: boolean;
 }
 
+export interface DebugInfoItem {
+  key: string;
+  value: string;
+}
+
+export interface DebugInfoBucket {
+  description: string;
+  items: DebugInfoItem[];
+}
+
+export interface DebugInformation {
+  buckets: DebugInfoBucket[];
+}
+
 export interface SessionData {
   success: boolean;
   msg?: string;
@@ -160,4 +177,5 @@ export interface SessionData {
   html: string;
   marksTotal: number;
   interactions: Record<string, InteractionDescription>;
+  debugInformation?: DebugInformation;
 }

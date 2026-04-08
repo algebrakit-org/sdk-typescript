@@ -6,7 +6,8 @@ import {
   SessionLockRequest,
   SessionInfoRequest,
   ExerciseValidateRequest,
-  SessionScoreResponse
+  SessionScoreResponse,
+  IAK_Exercise,
 } from '../src/types/ApiTypes';
 
 // Test exercise ID as specified in requirements
@@ -285,29 +286,98 @@ async function getSessionInfo(client: ApiClient, sessionId: string): Promise<voi
 }
 
 /**
+ * Step 6: Create a session using an AK_Exercise specification
+ */
+async function createSessionWithExerciseSpec(client: ApiClient): Promise<string> {
+  console.log('\nStep 6: Creating Session with AK_Exercise Spec');
+
+  // Define an exercise using the AK_Exercise format
+  const exerciseSpec: IAK_Exercise = {
+    type: 'AK_Exercise',
+    version: 1,
+    studentProfile: 'uk_KS5',
+    questionMode: 'ALL_AT_ONCE',
+    symbols: [
+      { name: 'x', type: 'VARIABLE' },
+    ],
+    elements: [
+      {
+        blocks: [
+          {
+            type: 'CONTENT',
+            content: 'Simplify the following expression.',
+          },
+          {
+            type: 'INTERACTION',
+            interaction: {
+              type: 'MULTISTEP',
+              solutionPart: {
+                task: {
+                  type: 'SIMPLIFY',
+                  expression: '2x + 3x',
+                },
+              },
+            },
+          },
+        ],
+      },
+    ],
+  };
+
+  try {
+    // Validate the exercise spec first
+    const validateResponse = await client.validateExercise({ exerciseSpec });
+    console.log(`   Validation: valid=${validateResponse.valid}, marks=${validateResponse.marks}`);
+
+    // Create a session from the spec
+    const request: CreateSessionRequest = {
+      exercises: [{ exerciseSpec }],
+      apiVersion: 2,
+    };
+
+    const response = await client.createSession(request);
+
+    if (response && response.length > 0 && response[0].sessions && response[0].sessions.length > 0) {
+      const sessionId = response[0].sessions[0].sessionId;
+      console.log('   Session created successfully from AK_Exercise spec');
+      console.log(`   - Session ID: ${sessionId}`);
+      return sessionId;
+    } else {
+      throw new Error('No session ID returned in response');
+    }
+  } catch (error: any) {
+    console.error('   Session creation from spec failed:', error.message);
+    throw error;
+  }
+}
+
+/**
  * Main demo function
  */
 async function runDemo(): Promise<void> {
   console.log('\nAlgebrakit TypeScript SDK Demo');
   console.log('=' .repeat(50));
-  
+
   // Load configuration
   const config = loadConfig();
-  
+
   // Initialize API client
   const client = new ApiClient(config.apiUrl, config.apiKey);
-  
+
   try {
     // Run test scenario
     await validateExercise(client);
-    
+
     const sessionId = await createSession(client);
     await lockUnlockSession(client, sessionId);
-    
+
     await getSessionScore(client, sessionId);
-    
+
     await getSessionInfo(client, sessionId);
-    
+
+    // Demo: create session from AK_Exercise spec
+    await createSessionWithExerciseSpec(client);
+
   } catch (error: any) {
     console.error('\n❌ Demo failed with error:', error.message);
     if (error.response) {
