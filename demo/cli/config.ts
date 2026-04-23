@@ -18,14 +18,14 @@ export function loadConfig(): Config {
 
   // Validate configuration
   if (!apiKey) {
-    console.error('\n❌ Error: ALGEBRAKIT_API_KEY is not set');
-    console.error('Please create a .env file in the demo directory with your API key.');
+    console.error('\nError: ALGEBRAKIT_API_KEY is not set');
+    console.error('Please create a .env file in this directory with your API key.');
     console.error('You can copy .env.example to .env and add your key.\n');
     process.exit(1);
   }
 
   if (apiKey === 'your_api_key_here') {
-    console.error('\n❌ Error: Please replace the placeholder API key with your actual key');
+    console.error('\nError: Please replace the placeholder API key with your actual key');
     console.error('Edit the .env file and add your real Algebrakit API key.\n');
     process.exit(1);
   }

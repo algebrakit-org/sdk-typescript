@@ -5,8 +5,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "demo": "ts-node demo/demo.ts",
-    "demo:setup": "cd demo && cp .env.example .env && echo 'Please edit demo/.env with your API key'"
+    "demo": "ts-node demo/cli/demo.ts",
+    "demo:setup": "cd demo/cli && cp .env.example .env && echo 'Please edit demo/cli/.env with your API key'",
+    "play-exercise": "ts-node demo/play-exercise/play-exercise.ts",
+    "play-exercise:setup": "cd demo/play-exercise && cp .env.example .env && echo 'Please edit demo/play-exercise/.env with your API key'"
   },
   "keywords": [],
   "author": "",
@@ -15,9 +17,11 @@
   "dependencies": {
     "@types/node": "^22.15.17",
     "axios": "^1.9.0",
+    "http-proxy": "^1.18.1",
     "typescript": "^5.8.3"
   },
   "devDependencies": {
+    "@types/http-proxy": "^1.17.17",
     "dotenv": "^17.3.1",
     "ts-node": "^10.9.2"
   }

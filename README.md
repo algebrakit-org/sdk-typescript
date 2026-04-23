@@ -81,6 +81,42 @@ apiClient.getSessionInfo(request).then(response => {
 });
 ```
 
+## Running the Demos
+
+Each demo lives in its own folder under `demo/` with its own configuration.
+
+### CLI Demo (`demo/cli/`)
+
+Demonstrates SDK API calls with text output.
+
+1. Set up your API key:
+   ```bash
+   npm run demo:setup
+   # Then edit demo/cli/.env with your actual API key
+   ```
+
+2. Run the demo:
+   ```bash
+   npm run demo
+   ```
+
+### Web Demo (`demo/play-exercise/`)
+
+Renders a working AlgebraKit exercise in the browser with learning event logging.
+
+1. Set up your API key:
+   ```bash
+   npm run play-exercise:setup
+   # Then edit demo/play-exercise/.env with your actual API key
+   ```
+
+2. Run the web demo:
+   ```bash
+   npm run play-exercise
+   ```
+
+3. Open `http://localhost:3000` in your browser.
+
 ## Error Handling
 
 Use the `handleApiError` utility to standardize error messages:
