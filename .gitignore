@@ -6,3 +6,4 @@ nbproject/
 **/.DS_Store
 .vscode/launch.json
 **/.env
+*.tgz

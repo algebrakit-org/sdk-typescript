@@ -1,11 +1,11 @@
 /**
- * AlgebraKit TypeScript SDK - Web Demo
+ * Algebrakit TypeScript SDK - Web Demo
  * =====================================
- * This demo creates an AlgebraKit exercise session using the SDK
+ * This demo creates an Algebrakit exercise session using the SDK
  * and serves it as an interactive web page with learning event logging.
  *
  * The server handles two kinds of requests:
- * - /proxy/algebrakit/* — forwards widget API calls to AlgebraKit with the API key attached
+ * - /proxy/algebrakit/* — forwards widget API calls to Algebrakit with the API key attached
  * - everything else    — serves the exercise page (index.html)
  *
  * Prerequisites:
@@ -24,8 +24,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import httpProxy from 'http-proxy';
-import { ApiClient } from '../../src/ApiClient';
-import { CreateSessionRequest } from '../../src/types/ApiTypes';
+import { ApiClient, CreateSessionRequest } from '@algebrakit/sdk';
 
 // Load environment variables from .env file
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -66,7 +65,7 @@ async function createExerciseSession(): Promise<{ html: string | null; error: st
   }
 }
 
-// Proxy: forwards widget requests to the AlgebraKit API with the API key attached.
+// Proxy: forwards widget requests to the Algebrakit API with the API key attached.
 const proxy = httpProxy.createProxyServer({ target: API_URL, changeOrigin: true });
 
 proxy.on('proxyReq', (proxyReq) => {
