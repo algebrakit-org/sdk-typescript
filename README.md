@@ -1,21 +1,21 @@
 # Algebrakit Webservice API SDK
 
-This is a Node.js/TypeScript SDK for interacting with the Algebrakit Webservice API. It provides methods for creating sessions, retrieving scores, locking/unlocking sessions, and fetching session information.
+Official Node.js/TypeScript SDK for the Algebrakit Webservice API. It provides methods for creating sessions, retrieving scores, locking/unlocking sessions, and fetching session information.
 
 ## Installation
 
-Install the SDK using npm:
-
 ```bash
-npm install algebrakit-sdk
+npm install @algebrakit/sdk
 ```
+
+Requires Node.js 18 or newer.
 
 ## Usage
 
 ### Initialize the API Client
 
 ```typescript
-import { ApiClient } from './src/ApiClient';
+import { ApiClient } from '@algebrakit/sdk';
 
 const apiClient = new ApiClient('https://api.algebrakit.com', 'your-api-key');
 ```
@@ -23,7 +23,7 @@ const apiClient = new ApiClient('https://api.algebrakit.com', 'your-api-key');
 ### Create a Session
 
 ```typescript
-import { CreateSessionRequest } from './src/types/ApiTypes';
+import { CreateSessionRequest } from '@algebrakit/sdk';
 
 const request: CreateSessionRequest = {
   exercises: [
@@ -42,7 +42,7 @@ apiClient.createSession(request).then(response => {
 ### Retrieve Session Scores
 
 ```typescript
-import { SessionScoreRequest } from './src/types/ApiTypes';
+import { SessionScoreRequest } from '@algebrakit/sdk';
 
 const request: SessionScoreRequest = {
   sessionId: '0a405901-8b89-4665-9ea0-6dbdff3602fc',
@@ -59,7 +59,7 @@ apiClient.getSessionScore(request).then(response => {
 ### Lock or Unlock Sessions
 
 ```typescript
-import { SessionLockRequest } from './src/types/ApiTypes';
+import { SessionLockRequest } from '@algebrakit/sdk';
 
 const request: SessionLockRequest = {
   action: 'LOCK',
@@ -76,7 +76,7 @@ apiClient.lockSession(request).then(response => {
 ### Retrieve Session Information
 
 ```typescript
-import { SessionInfoRequest } from './src/types/ApiTypes';
+import { SessionInfoRequest } from '@algebrakit/sdk';
 
 const request: SessionInfoRequest = {
   sessionId: '0a405901-8b89-4665-9ea0-6dbdff3602fc',
@@ -89,12 +89,48 @@ apiClient.getSessionInfo(request).then(response => {
 });
 ```
 
+## Running the Demos
+
+Each demo lives in its own folder under `demo/` with its own configuration.
+
+### CLI Demo (`demo/cli/`)
+
+Demonstrates SDK API calls with text output.
+
+1. Set up your API key:
+   ```bash
+   npm run demo:setup
+   # Then edit demo/cli/.env with your actual API key
+   ```
+
+2. Run the demo:
+   ```bash
+   npm run demo
+   ```
+
+### Web Demo (`demo/play-exercise/`)
+
+Renders a working Algebrakit exercise in the browser with learning event logging.
+
+1. Set up your API key:
+   ```bash
+   npm run play-exercise:setup
+   # Then edit demo/play-exercise/.env with your actual API key
+   ```
+
+2. Run the web demo:
+   ```bash
+   npm run play-exercise
+   ```
+
+3. Open `http://localhost:3000` in your browser.
+
 ## Error Handling
 
 Use the `handleApiError` utility to standardize error messages:
 
 ```typescript
-import { handleApiError } from './src/utils/errorHandler';
+import { handleApiError } from '@algebrakit/sdk';
 
 apiClient.createSession(request).catch(error => {
   console.error(handleApiError(error));
@@ -103,4 +139,4 @@ apiClient.createSession(request).catch(error => {
 
 ## License
 
-This SDK is licensed under the MIT License.
+Licensed under the [MIT License](LICENSE).
