@@ -1,6 +1,5 @@
-import { ApiClient } from '../../src/ApiClient';
-import { loadConfig } from './config';
 import {
+  ApiClient,
   CreateSessionRequest,
   SessionScoreRequest,
   SessionLockRequest,
@@ -8,7 +7,8 @@ import {
   ExerciseValidateRequest,
   SessionScoreResponse,
   IAK_Exercise,
-} from '../../src/types/ApiTypes';
+} from '@algebrakit/sdk';
+import { loadConfig } from './config';
 
 // Test exercise ID as specified in requirements
 const TEST_EXERCISE_ID = 'fa42e943-8213-41a6-8a91-8c22a929ffe9';
